@@ -75,8 +75,8 @@ public:
 
     IntArray(JNIEnv* env, int* ptr, int length)
         : JniWrapper<jintArray>(env, env->NewIntArray(length)),
-          _ptr(ptr) {
-        _env->SetIntArrayRegion(_obj, 0, length, ptr);
+          _ptr((jint*) ptr) {
+        _env->SetIntArrayRegion(_obj, 0, length, (const jint*) ptr);
     }
 
     ~IntArray() {

@@ -15,12 +15,13 @@ set(suitesparse_version "5.4.0")
 set(suitesparse_url http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${suitesparse_version}.tar.gz)
 
 # SuiteSparse
+find_program(MAKE_EXE NAMES make nmake)
 ExternalProject_Add(suitesparse_project
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "master"
     PATCH_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
-    BUILD_COMMAND make klu cxsparse
+    BUILD_COMMAND ${MAKE_EXE} klu cxsparse
     BUILD_IN_SOURCE 1
     INSTALL_COMMAND ""
 )
@@ -46,11 +47,10 @@ target_include_directories(math
 
 set(KLU_LIBRARY "")
 find_library(KLU_LIBRARY
-    NAMES klu
+    NAMES klu klud
     HINTS "${suitesparse_source_dir}/lib/"
 )
 
 target_link_libraries(math
     ${KLU_LIBRARY}
 )
-
