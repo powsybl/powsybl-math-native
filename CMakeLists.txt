@@ -14,18 +14,21 @@ find_package(JNI REQUIRED)
 set(suitesparse_version "5.4.0")
 set(suitesparse_url http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${suitesparse_version}.tar.gz)
 
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
+
 # SuiteSparse
-ExternalProject_Add(suitesparse_project
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/suitesparse_source
+ExternalProject_Add(suitesparse
+    SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "master"
-    PATCH_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
-    BUILD_COMMAND make klu cxsparse
-    BUILD_IN_SOURCE 1
-    INSTALL_COMMAND ""
+    PATCH_COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+               -DBUILD_METIS_DEFAULT=OFF
 )
-ExternalProject_Get_Property(suitesparse_project source_dir)
-set(suitesparse_source_dir ${source_dir})
+
+set(SUITE_SPARSE_INCLUDE ${THIRD_PARTY_DIR}/suitesparse/include)
+set(SUITE_SPARSE_KLU_LIB ${THIRD_PARTY_DIR}/suitesparse/lib64/${CMAKE_STATIC_LIBRARY_PREFIX}klu${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(SUITE_SPARSE_CXSPARSE_LIB ${THIRD_PARTY_DIR}/suitesparse/lib64/${CMAKE_STATIC_LIBRARY_PREFIX}cxsparse${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 set(SOURCES
     src/lu.cpp
@@ -33,24 +36,15 @@ set(SOURCES
 )
 add_library(math SHARED ${SOURCES})
 
+add_dependencies(math suitesparse)
+
 target_include_directories(math
     PUBLIC
     ${JNI_INCLUDE_DIRS}
-    ${suitesparse_source_dir}/SuiteSparse/SuiteSparse_config
-    ${suitesparse_source_dir}/SuiteSparse/AMD/Include
-    ${suitesparse_source_dir}/SuiteSparse/COLAMD/Include
-    ${suitesparse_source_dir}/SuiteSparse/BTF/Include
-    ${suitesparse_source_dir}/SuiteSparse/KLU/Include
-    ${suitesparse_source_dir}/SuiteSparse/CXSparse/Include
-)
-
-set(KLU_LIBRARY "")
-find_library(KLU_LIBRARY
-    NAMES klu
-    HINTS "${suitesparse_source_dir}/lib/"
+    ${SUITE_SPARSE_INCLUDE}
 )
 
 target_link_libraries(math
-    ${KLU_LIBRARY}
+    ${SUITE_SPARSE_KLU_LIB}
+    ${SUITE_SPARSE_CXSPARSE_LIB}
 )
-
