@@ -17,18 +17,37 @@ set(suitesparse_url http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
 # SuiteSparse
+if(WIN32)
+    set(PYTHON_EXE python)
+else()
+    set(PYTHON_EXE python3)
+endif()
+
 ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "master"
-    PATCH_COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
+    PATCH_COMMAND ${PYTHON_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DBUILD_METIS_DEFAULT=OFF
 )
 
+set(SUITE_SPARSE_LIB_PREFIX lib)
+if(WIN32)
+    set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib)
+    set(SUITE_SPARSE_LIB_SUFFIX d.lib)
+else()
+    set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib64)
+    set(SUITE_SPARSE_LIB_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
+endif()
+
+set(SUITE_SPARSE_CONFIG_LIB ${SUITE_SPARSE_LIB_DIR}/suitesparseconfig${SUITE_SPARSE_LIB_SUFFIX})
+set(SUITE_SPARSE_AMD_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}amd${SUITE_SPARSE_LIB_SUFFIX})
+set(SUITE_SPARSE_COLAMD_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}colamd${SUITE_SPARSE_LIB_SUFFIX})
+set(SUITE_SPARSE_BTF_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}btf${SUITE_SPARSE_LIB_SUFFIX})
+set(SUITE_SPARSE_KLU_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}klu${SUITE_SPARSE_LIB_SUFFIX})
+set(SUITE_SPARSE_CXSPARSE_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}cxsparse${SUITE_SPARSE_LIB_SUFFIX})
 set(SUITE_SPARSE_INCLUDE ${THIRD_PARTY_DIR}/suitesparse/include)
-set(SUITE_SPARSE_KLU_LIB ${THIRD_PARTY_DIR}/suitesparse/lib64/${CMAKE_STATIC_LIBRARY_PREFIX}klu${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(SUITE_SPARSE_CXSPARSE_LIB ${THIRD_PARTY_DIR}/suitesparse/lib64/${CMAKE_STATIC_LIBRARY_PREFIX}cxsparse${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 set(SOURCES
     src/lu.cpp
@@ -45,6 +64,10 @@ target_include_directories(math
 )
 
 target_link_libraries(math
+    ${SUITE_SPARSE_CONFIG_LIB}
+    ${SUITE_SPARSE_AMD_LIB}
+    ${SUITE_SPARSE_COLAMD_LIB}
+    ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
 )
