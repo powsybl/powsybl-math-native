@@ -9,6 +9,7 @@ project(math)
 
 include(ExternalProject)
 
+find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
 set(suitesparse_version "5.4.0")
@@ -64,6 +65,17 @@ target_include_directories(math
     ${SUITE_SPARSE_INCLUDE}
 )
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+    set(ARCHITECTURE linux_64)
+else()
+    message(FATAL_ERROR "System not supported")
+endif()
+
+set_target_properties(math
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
+)
+
 target_link_libraries(math
     ${SUITE_SPARSE_CONFIG_LIB}
     ${SUITE_SPARSE_AMD_LIB}
@@ -71,4 +83,14 @@ target_link_libraries(math
     ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
+)
+
+# Generate jar
+set(JAVA_ARCHIVE $ENV{JAVA_HOME}/bin/jar)
+
+set(POWSYBL_MATH_NATIVE_JAR_NAME powsybl-math-${ARCHITECTURE}.jar)
+
+add_custom_command(TARGET math
+    POST_BUILD
+    COMMAND ${JAVA_ARCHIVE} cvf ${POWSYBL_MATH_NATIVE_JAR_NAME} natives/
 )
