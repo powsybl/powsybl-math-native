@@ -67,12 +67,15 @@ target_include_directories(math
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
     set(ARCHITECTURE linux_64)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64")
+    set(ARCHITECTURE windows_64)
 else()
-    message(FATAL_ERROR "System not supported")
+    message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 set_target_properties(math
     PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
 )
 
