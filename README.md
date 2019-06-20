@@ -19,8 +19,13 @@ docker rm powsybl-math-native-tmp
 Following components have to be installed:
 
  - Git for Windows: https://gitforwindows.org/
- - CMake >= 3.1: https://cmake.org/download/
+ - CMake >= 3.1: https://cmake.org/download/. It must be added to the path.
  - Python 2.7 for Windows: https://www.python.org/downloads/windows/
+   - Python27 must be added to the path
+   - Six module must be installed. In a cmd.exe shell run the following command: 
+```bash 
+python -m pip install six
+```
  - Visual studio c++ compiler community edition: https://visualstudio.microsoft.com/fr/vs/features/cplusplus/
 
 # Jar installation
