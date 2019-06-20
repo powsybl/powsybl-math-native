@@ -69,11 +69,17 @@ else()
     message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-set_target_properties(math
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
-)
+if(WIN32)
+    set_target_properties(math
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
+    )
+else()
+    set_target_properties(math
+        PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
+    )
+endif()
 
 target_link_libraries(math
     ${SUITE_SPARSE_KLU_LIB}
