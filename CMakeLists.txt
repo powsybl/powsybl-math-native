@@ -18,17 +18,11 @@ set(suitesparse_url http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
 # SuiteSparse
-if(WIN32)
-    set(PYTHON_EXE python)
-else()
-    set(PYTHON_EXE python3)
-endif()
-
 ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "master"
-    PATCH_COMMAND ${PYTHON_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
+    PATCH_COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DBUILD_METIS_DEFAULT=OFF
 )
