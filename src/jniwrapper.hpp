@@ -43,11 +43,13 @@ class StringUTF : public JniWrapper<jstring> {
 public:
     StringUTF(JNIEnv* env, jstring jstr)
         : JniWrapper<jstring>(env, jstr),
-          _ptr(_env->GetStringUTFChars(jstr, NULL)) {
+          _ptr(0) {
     }
 
     ~StringUTF() {
-        _env->ReleaseStringUTFChars(_obj, _ptr);
+        if (_ptr) {
+            _env->ReleaseStringUTFChars(_obj, _ptr);
+        }
     }
 
     size_t length() const {
@@ -55,32 +57,40 @@ public:
     }
 
     const char* get() const {
+        if (!_ptr) {
+            _ptr = _env->GetStringUTFChars(_obj, NULL);
+        }
         return _ptr;
     }
 
     std::string toStr() const {
+        if (!_ptr) {
+            _ptr = _env->GetStringUTFChars(_obj, NULL);
+        }
         return std::string(_ptr);
     }
 
 private:
-    const char* _ptr;
+    mutable const char* _ptr;
 };
 
 class IntArray : public JniWrapper<jintArray> {
 public:
     IntArray(JNIEnv* env, jintArray obj)
         : JniWrapper<jintArray>(env, obj),
-          _ptr(_env->GetIntArrayElements(obj, 0)) {
+          _ptr(0) {
     }
 
     IntArray(JNIEnv* env, int* ptr, int length)
         : JniWrapper<jintArray>(env, env->NewIntArray(length)),
-          _ptr((jint*) ptr) {
+          _ptr(0) {
         _env->SetIntArrayRegion(_obj, 0, length, (const jint*) ptr);
     }
 
     ~IntArray() {
-        _env->ReleaseIntArrayElements(_obj, _ptr, 0);
+        if (_ptr) {
+            _env->ReleaseIntArrayElements(_obj, _ptr, 0);
+        }
     }
 
     size_t length() const {
@@ -88,28 +98,33 @@ public:
     }
 
     int* get() const {
+        if (!_ptr) {
+            _ptr = _env->GetIntArrayElements(_obj, 0);
+        }
         return (int*) _ptr;
     }
 
 private:
-    jint* _ptr;
+    mutable jint* _ptr;
 };
 
 class DoubleArray : public JniWrapper<jdoubleArray> {
 public:
     DoubleArray(JNIEnv* env, jdoubleArray obj)
         : JniWrapper<jdoubleArray>(env, obj),
-          _ptr(_env->GetDoubleArrayElements(obj, 0)) {
+          _ptr(0) {
     }
 
     DoubleArray(JNIEnv* env, double* ptr, int length)
         : JniWrapper<jdoubleArray>(env, env->NewDoubleArray(length)),
-          _ptr(ptr) {
+          _ptr(0) {
         _env->SetDoubleArrayRegion(_obj, 0, length, ptr);
     }
 
     ~DoubleArray() {
-        _env->ReleaseDoubleArrayElements(_obj, _ptr, 0);
+        if (_ptr) {
+            _env->ReleaseDoubleArrayElements(_obj, _ptr, 0);
+        }
     }
 
     size_t length() const {
@@ -117,11 +132,14 @@ public:
     }
 
     double* get() const {
+        if (!_ptr) {
+            _ptr = _env->GetDoubleArrayElements(_obj, 0);
+        }
         return (double*) _ptr;
     }
 
 private:
-    jdouble* _ptr;
+    mutable jdouble* _ptr;
 };
 
 void throwJavaLangRuntimeException(JNIEnv* env, const char* msg);
