@@ -30,8 +30,9 @@ python -m pip install six
 
 # Jar installation
 
-To install jar in local repository:
+To install jars in local repository:
 
 ```bash
-mvn install:install-file -Dfile=powsybl-math-linux_64-1.0.0.jar -DpomFile=
+mvn install:install-file -Dfile=powsybl-math-linux_64-1.0.0.jar -DpomFile=pom_linux_64.xml
+mvn install:install-file -Dfile=powsybl-math-windows_64-1.0.0.jar -DpomFile=pom_windows_64.xml
 ```
