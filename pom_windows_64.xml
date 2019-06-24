@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2019, RTE (http://www.rte-france.com)
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+-->
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.powsybl</groupId>
+    <artifactId>powsybl-math-windows_64</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Math native (Windows 64)</name>
+    <description>Windows 64 native library for PowSyBl math</description>
+    <url>https://www.powsybl.org</url>
+
+    <licenses>
+        <license>
+            <name>Mozilla Public License, Version 2.0</name>
+            <url>https://www.mozilla.org/en-US/MPL/2.0/</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://github.com/powsybl/powsybl-math-native.git</connection>
+        <developerConnection>scm:git:https://github.com/powsybl/powsybl-math-native.git</developerConnection>
+        <url>https://github.com/powsybl/powsybl-math-native</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Mathieu BAGUE</name>
+            <email>mathieu.bague@rte-france.com</email>
+            <organization>RTE</organization>
+            <organizationUrl>http://www.rte-france.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Geoffroy JAMGOTCHIAN</name>
+            <email>geoffroy.jamgotchian@rte-france.com</email>
+            <organization>RTE</organization>
+            <organizationUrl>http://www.rte-france.com</organizationUrl>
+        </developer>
+    </developers>
+</project>

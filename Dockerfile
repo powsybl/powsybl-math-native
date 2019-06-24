@@ -31,7 +31,7 @@ RUN test -n "${proxy_host}" \
 RUN git config --global user.email "you@example.com" \
 && git config --global user.name "Your Name"
 
-RUN git clone https://github.com/geofjamg/powsybl-math-native.git
+RUN git clone https://github.com/powsybl/powsybl-math-native.git
 
 RUN mkdir /powsybl-math-native/build \
 && cd /powsybl-math-native/build \
