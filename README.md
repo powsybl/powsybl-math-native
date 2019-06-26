@@ -1,12 +1,12 @@
 # Linux build
 
-Everything is automated on Linux using a Dockefile. To build Docker image, run the following command (proxy related arguments are  optionals).
+Everything is automated on Linux using a Dockerfile. To build Docker image, run the following command (proxy related arguments are  optionals).
 
 ```bash
 docker build -t powsybl-math-native --build-arg proxy_host=<HOST> --build-arg proxy_port=<PORT> --build-arg proxy_username=<USER> --build-arg proxy_password=<PWD> .
 ```
 
-Once docker image has  been built, we can retrieved native jar:
+Once docker image has been built, we can retrieved native jar:
 
 ```bash
 docker run --name powsybl-math-native-tmp powsybl-math-native /bin/true
@@ -33,6 +33,5 @@ python -m pip install six
 To install jars in local repository:
 
 ```bash
-mvn install:install-file -Dfile=powsybl-math-linux_64-1.0.0.jar -DpomFile=pom_linux_64.xml
-mvn install:install-file -Dfile=powsybl-math-windows_64-1.0.0.jar -DpomFile=pom_windows_64.xml
+mvn install
 ```

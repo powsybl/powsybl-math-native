@@ -72,12 +72,12 @@ endif()
 if(WIN32)
     set_target_properties(math
         PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
     )
 else()
     set_target_properties(math
         PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/natives/${ARCHITECTURE}"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
     )
 endif()
 
@@ -88,15 +88,4 @@ target_link_libraries(math
     ${SUITE_SPARSE_COLAMD_LIB}
     ${SUITE_SPARSE_AMD_LIB}
     ${SUITE_SPARSE_CONFIG_LIB}
-)
-
-# Generate jar
-set(JAVA_ARCHIVE $ENV{JAVA_HOME}/bin/jar)
-
-set(POWSYBL_MATH_NATIVE_VERSION 1.0.0)
-set(POWSYBL_MATH_NATIVE_JAR_NAME powsybl-math-${ARCHITECTURE}-${POWSYBL_MATH_NATIVE_VERSION}.jar)
-
-add_custom_command(TARGET math
-    POST_BUILD
-    COMMAND ${JAVA_ARCHIVE} cvf ${POWSYBL_MATH_NATIVE_JAR_NAME} natives/
 )

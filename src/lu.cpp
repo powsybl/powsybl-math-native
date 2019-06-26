@@ -1,9 +1,9 @@
-// Copyright (c) 2017, RTE (http://www.rte-france.com)
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 /**
+ * Copyright (c) 2017, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * @file lu.cpp
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
@@ -32,8 +32,8 @@ private:
     static jmethodID _constructor; 
 };
 
-jclass ComPowsyblMathMatrixSparseMatrix::_cls = 0;
-jmethodID ComPowsyblMathMatrixSparseMatrix::_constructor = 0;
+jclass ComPowsyblMathMatrixSparseMatrix::_cls = nullptr;
+jmethodID ComPowsyblMathMatrixSparseMatrix::_constructor = nullptr;
 
 void ComPowsyblMathMatrixSparseMatrix::init(JNIEnv* env) {
     jclass localCls = env->FindClass("com/powsybl/math/matrix/SparseMatrix");
@@ -41,27 +41,30 @@ void ComPowsyblMathMatrixSparseMatrix::init(JNIEnv* env) {
     _constructor = env->GetMethodID(_cls, "<init>", "(II[I[I[D)V");
 }
 
-ComPowsyblMathMatrixSparseMatrix::ComPowsyblMathMatrixSparseMatrix(JNIEnv* env, int m, int n, const IntArray& ap, const IntArray& ai, const DoubleArray& ax)
-    : JniWrapper<jobject>(env, env->NewObject(_cls, _constructor, m, n, ap.obj(), ai.obj(), ax.obj())) {
+ComPowsyblMathMatrixSparseMatrix::ComPowsyblMathMatrixSparseMatrix(JNIEnv* env, int m, int n, const IntArray& ap, const IntArray& ai, const DoubleArray& ax) :
+    JniWrapper<jobject>(env, env->NewObject(_cls, _constructor, m, n, ap.obj(), ai.obj(), ax.obj())) {
 }
 
-}
+}  // namespace jni
 
-}
+}  // namespace powsybl
 
-struct LUContext {
-    LUContext() {
-    }
+class LUContext {
+public:
+    LUContext() = default;
 
-    klu_symbolic* symbolic;
-    klu_numeric* numeric;
-    klu_common common;
+    LUContext(const LUContext&) = delete;
+
+    ~LUContext() = default;
+
+    LUContext& operator=(const LUContext&) = delete;
 
     std::string error() const;
 
-private:
-    LUContext(const LUContext&);
-    LUContext& operator=(const LUContext&);
+public:
+    klu_symbolic* symbolic;
+    klu_numeric* numeric;
+    klu_common common;
 };
 
 std::string LUContext::error() const {
@@ -76,39 +79,42 @@ std::string LUContext::error() const {
 }
 
 class LUContextManager {
-
-    LUContextManager(const LUContextManager&);
-    LUContextManager& operator=(const LUContextManager&);
-
-    std::map<std::string, std::shared_ptr<LUContext>> _contexts;
-    std::mutex _mutex;
-
 public:
-    LUContextManager() {
-    }
+    LUContextManager() = default;
 
-    std::shared_ptr<LUContext> createContext(const std::string& id);
-    std::shared_ptr<LUContext> findContext(const std::string& id);
+    LUContextManager(const LUContextManager&) = delete;
+
+    ~LUContextManager() = default;
+
+    LUContextManager& operator=(const LUContextManager&) = delete;
+
+    LUContext& createContext(const std::string& id);
+
+    LUContext& findContext(const std::string& id);
+
     void removeContext(const std::string& id);
+
+private:
+    std::map<std::string, std::unique_ptr<LUContext>> _contexts;
+    std::mutex _mutex;
 };
 
-std::shared_ptr<LUContext> LUContextManager::createContext(const std::string& id) {
+LUContext& LUContextManager::createContext(const std::string& id) {
     std::lock_guard<std::mutex> lk(_mutex);
     if (_contexts.find(id) != _contexts.end()) {
         throw std::runtime_error("Context " + id + " already exists");
     }
-    std::shared_ptr<LUContext> context(new LUContext());
-    _contexts[id] = context;
-    return context;
+    auto it = _contexts.insert(std::make_pair(id, new LUContext()));
+    return *it.first->second;
 }
 
-std::shared_ptr<LUContext> LUContextManager::findContext(const std::string& id) {
+LUContext& LUContextManager::findContext(const std::string& id) {
     std::lock_guard<std::mutex> lk(_mutex);
-    std::map<std::string, std::shared_ptr<LUContext>>::const_iterator it = _contexts.find(id);
+    auto it = _contexts.find(id);
     if (it == _contexts.end()) {
         throw std::runtime_error("Context " + id + " not found");
     }
-    return it->second;
+    return *it->second;
 }
 
 void LUContextManager::removeContext(const std::string& id) {
@@ -134,19 +140,19 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_init(J
         powsybl::jni::IntArray ai(env, j_ai);
         powsybl::jni::DoubleArray ax(env, j_ax);
 
-        std::shared_ptr<LUContext> context = MANAGER->createContext(id);
+        LUContext& context = MANAGER->createContext(id);
  
-        if (klu_defaults(&context->common) == 0) {
-            throw std::runtime_error("klu_defaults error " + context->error());
+        if (klu_defaults(&context.common) == 0) {
+            throw std::runtime_error("klu_defaults error " + context.error());
         }
 
-        context->symbolic = klu_analyze(ap.length()-1, ap.get(), ai.get(), &context->common);
-        if (!context->symbolic) {
-            throw std::runtime_error("klu_analyze error " + context->error());
+        context.symbolic = klu_analyze(ap.length()-1, ap.get(), ai.get(), &context.common);
+        if (!context.symbolic) {
+            throw std::runtime_error("klu_analyze error " + context.error());
         }
-        context->numeric = klu_factor(ap.get(), ai.get(), ax.get(), context->symbolic, &context->common);
-        if (!context->numeric) {
-            throw std::runtime_error("klu_factor error " + context->error());
+        context.numeric = klu_factor(ap.get(), ai.get(), ax.get(), context.symbolic, &context.common);
+        if (!context.numeric) {
+            throw std::runtime_error("klu_factor error " + context.error());
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
@@ -167,11 +173,11 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update
         powsybl::jni::IntArray ai(env, j_ai);
         powsybl::jni::DoubleArray ax(env, j_ax);
 
-        std::shared_ptr<LUContext> context = MANAGER->findContext(id);
+        LUContext& context = MANAGER->findContext(id);
 
-        int ok = klu_refactor(ap.get(), ai.get(), ax.get(), context->symbolic, context->numeric, &context->common);
+        int ok = klu_refactor(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
         if (ok == 0) {
-            throw std::runtime_error("klu_refactor error " + context->error());
+            throw std::runtime_error("klu_refactor error " + context.error());
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
@@ -189,13 +195,13 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_releas
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
 
-        std::shared_ptr<LUContext> context = MANAGER->findContext(id);
+        LUContext& context = MANAGER->findContext(id);
 
-        if (klu_free_symbolic(&context->symbolic, &context->common) == 0) {
-            throw std::runtime_error("klu_free_symbolic error " + context->error());
+        if (klu_free_symbolic(&context.symbolic, &context.common) == 0) {
+            throw std::runtime_error("klu_free_symbolic error " + context.error());
         }
-        if (klu_free_numeric(&context->numeric, &context->common) == 0) {
-            throw std::runtime_error("klu_free_numeric error " + context->error());
+        if (klu_free_numeric(&context.numeric, &context.common) == 0) {
+            throw std::runtime_error("klu_free_numeric error " + context.error());
         }
 
         MANAGER->removeContext(id);
@@ -216,10 +222,10 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         powsybl::jni::DoubleArray b(env, j_b);
 
-        std::shared_ptr<LUContext> context = MANAGER->findContext(id);
+        LUContext& context = MANAGER->findContext(id);
 
-        if (klu_solve(context->symbolic, context->numeric, b.length(), 1, b.get(), &context->common) == 0) {
-            throw std::runtime_error("klu_solve error " + context->error());
+        if (klu_solve(context.symbolic, context.numeric, b.length(), 1, b.get(), &context.common) == 0) {
+            throw std::runtime_error("klu_solve error " + context.error());
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
@@ -236,15 +242,15 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(
 JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2(JNIEnv * env, jobject, jstring j_id, jint m, jint n, jobject j_b) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
-        double* b = static_cast<double*>(env->GetDirectBufferAddress(j_b));
+        auto* b = static_cast<double*>(env->GetDirectBufferAddress(j_b));
         if (!b) {
            throw std::runtime_error("GetDirectBufferAddress error");
         }
 
-        std::shared_ptr<LUContext> context = MANAGER->findContext(id);
+        LUContext& context = MANAGER->findContext(id);
 
-        if (klu_solve(context->symbolic, context->numeric, m, n, b, &context->common) == 0) {
-            throw std::runtime_error("klu_solve error " + context->error());
+        if (klu_solve(context.symbolic, context.numeric, m, n, b, &context.common) == 0) {
+            throw std::runtime_error("klu_solve error " + context.error());
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
@@ -319,7 +325,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv
     } catch (...) {
         powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
     }
-    return 0;
+    return nullptr;
 }
 
 #ifdef __cplusplus
