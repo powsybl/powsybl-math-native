@@ -32,10 +32,16 @@ if(WIN32)
     set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib)
     set(SUITE_SPARSE_LIB_SUFFIX d.lib)
     set(SUITE_SPARSE_CONFIG_LIB ${SUITE_SPARSE_LIB_DIR}/suitesparseconfig${SUITE_SPARSE_LIB_SUFFIX})
-else()
-    set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib64)
+elseif(UNIX)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib)
+    else()
+        set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib64)
+    endif()
     set(SUITE_SPARSE_LIB_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
     set(SUITE_SPARSE_CONFIG_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}suitesparseconfig${SUITE_SPARSE_LIB_SUFFIX})
+else()
+    message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 set(SUITE_SPARSE_AMD_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}amd${SUITE_SPARSE_LIB_SUFFIX})
@@ -61,12 +67,20 @@ target_include_directories(math
     ${SUITE_SPARSE_INCLUDE}
 )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
-    set(ARCHITECTURE linux_64)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64")
-    set(ARCHITECTURE windows_64)
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+    set(OS_BITS 64)
 else()
-    message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
+    set(OS_BITS 32)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    set(ARCHITECTURE windows_${OS_BITS})
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    set(ARCHITECTURE linux_${OS_BITS})
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(ARCHITECTURE osx_${OS_BITS})
+else()
+    message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 if(WIN32)
@@ -74,7 +88,7 @@ if(WIN32)
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
     )
-else()
+elseif(UNIX)
     set_target_properties(math
         PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
