@@ -1,39 +1,29 @@
-FROM centos
-ARG proxy_host
-ARG proxy_port
-ARG proxy_username
-ARG proxy_password
+#
+# Copyright (c) 2019, RTE (http://www.rte-france.com)
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
 
-RUN test -n "${proxy_host}" \
-&& echo "proxy=http://${proxy_host}:${proxy_port}" >> /etc/yum.conf \
-&& echo "proxy_username=${proxy_username}" >> /etc/yum.conf \
-&& echo "proxy_password=${proxy_password}" >> /etc/yum.conf
+FROM centos:7.6.1810
+MAINTAINER "Mathieu BAGUE <mathieu.bague@rte-france.com>"
 
-# epel is needed for cmake3 needed for sparsesuite build 
-RUN yum -y install epel-release && \
-yum -y update
+# Install additional repositories
+RUN yum -y install epel-release
 
-# epel repo seems not to use same global yum proxy, we need to configure it specifically
-RUN test -n "${proxy_host}" \
-&& sed -i -e "s/\[epel\]/[epel]\nproxy=http:\/\/${proxy_host}:${proxy_port}\nproxy_username=${proxy_username}\nproxy_password=${proxy_password}/g" /etc/yum.repos.d/epel.repo
-
-RUN yum -y update \
-&& yum install -y git cmake3 make gcc-c++ java-1.8.0-openjdk.x86_64 java-1.8.0-openjdk-devel.x86_64 python python-six
-
-ENV http_proxy=http://${proxy_username}:${proxy_password}@${proxy_host}:${proxy_port}
-ENV https_proxy=$http_proxy
-
-RUN test -n "${proxy_host}" \
-&& echo "[http]" >> $HOME/.gitconfig \
-&& echo "	proxy = http://${proxy_username}:${proxy_password}@${proxy_host}:${proxy_port}"  >> $HOME/.gitconfig
+# Install requirements
+RUN yum -y install \
+    cmake3 \
+    gcc-c++ \
+    git \
+    java-1.8.0-openjdk-devel \
+    lapack-devel
+    make \
+    maven \
+    python \
+    python-six \
+&& yum clean all
 
 # to fix an issue with cmake patch  
 RUN git config --global user.email "you@example.com" \
 && git config --global user.name "Your Name"
-
-RUN git clone https://github.com/powsybl/powsybl-math-native.git
-
-RUN mkdir /powsybl-math-native/build \
-&& cd /powsybl-math-native/build \
-&& cmake3 .. \
-&& make

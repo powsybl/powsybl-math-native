@@ -104,7 +104,8 @@ LUContext& LUContextManager::createContext(const std::string& id) {
     if (_contexts.find(id) != _contexts.end()) {
         throw std::runtime_error("Context " + id + " already exists");
     }
-    auto it = _contexts.insert(std::make_pair(id, new LUContext()));
+    std::unique_ptr<LUContext> context(new LUContext());
+    auto it = _contexts.insert(std::make_pair(id, std::move(context)));
     return *it.first->second;
 }
 
