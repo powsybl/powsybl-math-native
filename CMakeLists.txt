@@ -18,13 +18,23 @@ set(suitesparse_url http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${
 
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+    set(OS_BITS 64)
+else()
+    set(OS_BITS 32)
+endif()
+
 # SuiteSparse
+if(WIN32)
+    set(LAPACK_DIR ${THIRD_PARTY_DIR}/suitesparse_source/lapack_windows/x${OS_BITS})
+endif()
 ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "master"
     PATCH_COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/suitesparse_patch.py ${suitesparse_version}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+               -DLAPACK_DIR=${LAPACK_DIR}
                -DBUILD_METIS_DEFAULT=OFF
 )
 
@@ -62,12 +72,6 @@ target_include_directories(math
     ${JNI_INCLUDE_DIRS}
     ${SUITE_SPARSE_INCLUDE}
 )
-
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-    set(OS_BITS 64)
-else()
-    set(OS_BITS 32)
-endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     set(ARCHITECTURE windows_${OS_BITS})
