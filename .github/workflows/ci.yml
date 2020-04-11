@@ -1,0 +1,52 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - {
+            name: linux,
+            os: ubuntu-latest,
+            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
+            artifact_name: libmath.so,
+            artifact_path: linux_64
+          }
+          - {
+            name: macos,
+            os: macos-latest,
+            artifact_name: libmath.dylib,
+            artifact_path: osx_64
+          }
+          - {
+            name: windows,
+            os: windows-latest,
+            artifact_name: math.dll,
+            artifact_path: windows_64/Release
+          }
+
+    steps:
+      - name: Install pre-requisites
+        if: matrix.config.os == 'ubuntu-latest'
+        run: sudo apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev
+
+      - name: Checkout sources
+        uses: actions/checkout@v1
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.config.artifact_name }}
+          path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
