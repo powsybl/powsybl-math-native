@@ -180,6 +180,20 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update
         if (ok == 0) {
             throw std::runtime_error("klu_refactor error " + context.error());
         }
+        ok = klu_rgrowth(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
+        if (ok == 0) {
+            throw std::runtime_error("klu_rgrowth error " + context.error());
+        }
+        // if rgrowth is too small we have to do a whole factorization
+        if (context.common.rgrowth < 1e-10) { // no idea what could be the right threshold but 1e-10 seems to work...
+            if (klu_free_numeric(&context.numeric, &context.common) == 0) {
+                throw std::runtime_error("klu_free_numeric error " + context.error());
+            }
+            context.numeric = klu_factor(ap.get(), ai.get(), ax.get(), context.symbolic, &context.common);
+            if (!context.numeric) {
+                throw std::runtime_error("klu_factor error " + context.error());
+            }
+        }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
     } catch (...) {
