@@ -167,7 +167,8 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_init(J
  * Method:    update
  * Signature: (Ljava/lang/String;[I[I[D)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update(JNIEnv * env, jobject, jstring j_id, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update(JNIEnv * env, jobject, jstring j_id, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax,
+                                                                                 jdouble rgrowthThreshold) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         powsybl::jni::IntArray ap(env, j_ap);
@@ -185,7 +186,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update
             throw std::runtime_error("klu_rgrowth error " + context.error());
         }
         // if rgrowth is too small we have to do a whole factorization
-        if (context.common.rgrowth < 1e-10) { // no idea what could be the right threshold but 1e-10 seems to work...
+        if (context.common.rgrowth < rgrowthThreshold) { // no idea what could be the right threshold but 1e-10 seems to work...
             if (klu_free_numeric(&context.numeric, &context.common) == 0) {
                 throw std::runtime_error("klu_free_numeric error " + context.error());
             }
@@ -232,15 +233,21 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_releas
  * Method:    solve
  * Signature: (Ljava/lang/String;[D)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(JNIEnv * env, jobject, jstring j_id, jdoubleArray j_b) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(JNIEnv * env, jobject, jstring j_id, jdoubleArray j_b, jboolean transpose) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         powsybl::jni::DoubleArray b(env, j_b);
 
         LUContext& context = MANAGER->findContext(id);
 
-        if (klu_solve(context.symbolic, context.numeric, b.length(), 1, b.get(), &context.common) == 0) {
-            throw std::runtime_error("klu_solve error " + context.error());
+        if (transpose) {
+            if (klu_tsolve(context.symbolic, context.numeric, b.length(), 1, b.get(), &context.common) == 0) {
+                throw std::runtime_error("klu_tsolve error " + context.error());
+            }
+        } else {
+            if (klu_solve(context.symbolic, context.numeric, b.length(), 1, b.get(), &context.common) == 0) {
+                throw std::runtime_error("klu_solve error " + context.error());
+            }
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
@@ -254,7 +261,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(
  * Method:    solve2
  * Signature: (Ljava/lang/String;IILjava/nio/ByteBuffer;)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2(JNIEnv * env, jobject, jstring j_id, jint m, jint n, jobject j_b) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2(JNIEnv * env, jobject, jstring j_id, jint m, jint n, jobject j_b, jboolean transpose) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* b = static_cast<double*>(env->GetDirectBufferAddress(j_b));
@@ -264,8 +271,14 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2
 
         LUContext& context = MANAGER->findContext(id);
 
-        if (klu_solve(context.symbolic, context.numeric, m, n, b, &context.common) == 0) {
-            throw std::runtime_error("klu_solve error " + context.error());
+        if (transpose) {
+            if (klu_tsolve(context.symbolic, context.numeric, m, n, b, &context.common) == 0) {
+                throw std::runtime_error("klu_tsolve error " + context.error());
+            }
+        } else {
+            if (klu_solve(context.symbolic, context.numeric, m, n, b, &context.common) == 0) {
+                throw std::runtime_error("klu_solve error " + context.error());
+            }
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());

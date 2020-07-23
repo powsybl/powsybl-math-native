@@ -13,9 +13,9 @@ include(GNUInstallDirs)
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
-set(suitesparse_version "5.4.0")
-set(suitesparse_archive "SuiteSparse-${suitesparse_version}.tar.gz")
-set(suitesparse_url http://faculty.cse.tamu.edu/davis/SuiteSparse/${suitesparse_archive})
+set(suitesparse_version "5.8.1")
+set(suitesparse_archive "v${suitesparse_version}.tar.gz")
+set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
 
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
