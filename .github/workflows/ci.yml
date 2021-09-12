@@ -11,7 +11,7 @@ jobs:
         config:
           - {
             name: linux,
-            os: ubuntu-latest,
+            os: ubuntu-18.04,
             cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
             artifact_name: libmath.so,
             artifact_path: linux_64
@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Install pre-requisites
-        if: matrix.config.os == 'ubuntu-latest'
+        if: matrix.config.os == 'ubuntu-18.04'
         run: sudo apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev
 
       - name: Checkout sources
