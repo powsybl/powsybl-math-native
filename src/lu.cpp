@@ -356,6 +356,40 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv
     return nullptr;
 }
 
+/*
+ * Class:     com.powsybl_math_matrix_SparseMatrix
+ * Method:    transpose
+ * Signature: (II[I[I[D)Lcom/powsybl/math/matrix/SparseMatrix;
+ */
+JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_transpose(JNIEnv * env, jobject, jint m, jint n, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax) {
+    try {
+        powsybl::jni::IntArray ap(env, j_ap);
+        powsybl::jni::IntArray ai(env, j_ai);
+        powsybl::jni::DoubleArray ax(env, j_ax);
+
+        cs_di a;
+        a.nz = -1;
+        a.nzmax = ax.length();
+        a.m = m;
+        a.n = n;
+        a.p = ap.get();
+        a.i = ai.get();
+        a.x = ax.get();
+
+        cs_di* at = cs_di_transpose(&a, 1);
+
+        powsybl::jni::IntArray apt(env, at->p, at->n + 1);
+        powsybl::jni::IntArray ait(env, at->i, at->nzmax);
+        powsybl::jni::DoubleArray axt(env, at->x, at->nzmax);
+        return powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, at->m, at->n, apt, ait, axt).obj();
+    } catch (const std::exception& e) {
+        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+    } catch (...) {
+        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+    }
+    return nullptr;
+}
+
 #ifdef __cplusplus
 }
 #endif
