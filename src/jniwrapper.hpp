@@ -12,6 +12,7 @@
 #define JNIWRAPPER_HPP
 
 #include <string>
+#include <iostream>
 #include <jni.h>
 
 namespace powsybl {
@@ -64,14 +65,22 @@ public:
 
     const char* get() const {
         if (!_ptr) {
-            _ptr = _env->GetStringUTFChars(_obj, nullptr);
+            jboolean isCopy;
+            _ptr = _env->GetStringUTFChars(_obj, &isCopy);
+            if (isCopy == JNI_TRUE) {
+                std::cerr << "Char array copy!" << std::endl;
+            }
         }
         return _ptr;
     }
 
     std::string toStr() const {
         if (!_ptr) {
-            _ptr = _env->GetStringUTFChars(_obj, nullptr);
+            jboolean isCopy;
+            _ptr = _env->GetStringUTFChars(_obj, &isCopy);
+            if (isCopy == JNI_TRUE) {
+                std::cerr << "Char array copy!" << std::endl;
+            }
         }
         return std::string(_ptr);
     }
@@ -105,7 +114,11 @@ public:
 
     int* get() const {
         if (!_ptr) {
-            _ptr = _env->GetIntArrayElements(_obj, nullptr);
+            jboolean isCopy;
+            _ptr = _env->GetIntArrayElements(_obj, &isCopy);
+            if (isCopy == JNI_TRUE) {
+                std::cerr << "Int array copy!" << std::endl;
+            }
         }
         return (int*) _ptr;
     }
@@ -139,7 +152,11 @@ public:
 
     double* get() const {
         if (!_ptr) {
-            _ptr = _env->GetDoubleArrayElements(_obj, nullptr);
+            jboolean isCopy;
+            _ptr = _env->GetDoubleArrayElements(_obj, &isCopy);
+            if (isCopy == JNI_TRUE) {
+                std::cerr << "Double array copy!" << std::endl;
+            }
         }
         return (double*) _ptr;
     }
