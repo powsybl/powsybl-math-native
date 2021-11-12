@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0.2)
 
 project(math)
 
@@ -21,6 +21,8 @@ set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
     set(OS_BITS 64)
+elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "arm64")
+    set(OS_BITS arm64)
 else()
     set(OS_BITS 32)
 endif()
@@ -36,7 +38,7 @@ ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "v1.5.0"
-    PATCH_COMMAND cmake -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive}
+    PATCH_COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
