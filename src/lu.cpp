@@ -390,6 +390,55 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_transpose(JN
     return nullptr;
 }
 
+/*
+ * Class:     com.powsybl_math_matrix_SparseMatrix
+ * Method:    add
+ * Signature: (II[I[I[DII[I[I[DDD)Lcom/powsybl/math/matrix/SparseMatrix;
+ */
+JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_add(JNIEnv * env, jobject,
+                                                                        jint m1, jint n1, jintArray j_ap1, jintArray j_ai1, jdoubleArray j_ax1,
+                                                                        jint m2, jint n2, jintArray j_ap2, jintArray j_ai2, jdoubleArray j_ax2,
+                                                                        jdouble alpha, jdouble beta) {
+    try {
+        powsybl::jni::IntArray ap1(env, j_ap1);
+        powsybl::jni::IntArray ai1(env, j_ai1);
+        powsybl::jni::DoubleArray ax1(env, j_ax1);
+        powsybl::jni::IntArray ap2(env, j_ap2);
+        powsybl::jni::IntArray ai2(env, j_ai2);
+        powsybl::jni::DoubleArray ax2(env, j_ax2);
+
+        cs_di a1;
+        a1.nz = -1;
+        a1.nzmax = ax1.length();
+        a1.m = m1;
+        a1.n = n1;
+        a1.p = ap1.get();
+        a1.i = ai1.get();
+        a1.x = ax1.get();
+
+        cs_di a2;
+        a2.nz = -1;
+        a2.nzmax = ax2.length();
+        a2.m = m2;
+        a2.n = n2;
+        a2.p = ap2.get();
+        a2.i = ai2.get();
+        a2.x = ax2.get();
+
+        cs_di* a3 = cs_di_add(&a1, &a2, alpha, beta);
+
+        powsybl::jni::IntArray ap3(env, a3->p, a3->n + 1);
+        powsybl::jni::IntArray ai3(env, a3->i, a3->nzmax);
+        powsybl::jni::DoubleArray ax3(env, a3->x, a3->nzmax);
+        return powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, a3->m, a3->n, ap3, ai3, ax3).obj();
+    } catch (const std::exception& e) {
+        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+    } catch (...) {
+        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+    }
+    return nullptr;
+}
+
 #ifdef __cplusplus
 }
 #endif
