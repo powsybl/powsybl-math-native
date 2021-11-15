@@ -347,7 +347,11 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv
         powsybl::jni::IntArray ap3(env, a3->p, a3->n + 1);
         powsybl::jni::IntArray ai3(env, a3->i, a3->nzmax);
         powsybl::jni::DoubleArray ax3(env, a3->x, a3->nzmax);
-        return powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, a3->m, a3->n, ap3, ai3, ax3).obj();
+        jobject matrix = powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, a3->m, a3->n, ap3, ai3, ax3).obj();
+
+        cs_free(a3);
+
+        return matrix;
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
     } catch (...) {
@@ -381,7 +385,11 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_transpose(JN
         powsybl::jni::IntArray apt(env, at->p, at->n + 1);
         powsybl::jni::IntArray ait(env, at->i, at->nzmax);
         powsybl::jni::DoubleArray axt(env, at->x, at->nzmax);
-        return powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, at->m, at->n, apt, ait, axt).obj();
+        jobject matrix = powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, at->m, at->n, apt, ait, axt).obj();
+
+        cs_free(at);
+
+        return matrix;
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
     } catch (...) {
@@ -430,7 +438,11 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_add(JNIEnv *
         powsybl::jni::IntArray ap3(env, a3->p, a3->n + 1);
         powsybl::jni::IntArray ai3(env, a3->i, a3->nzmax);
         powsybl::jni::DoubleArray ax3(env, a3->x, a3->nzmax);
-        return powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, a3->m, a3->n, ap3, ai3, ax3).obj();
+        jobject matrix = powsybl::jni::ComPowsyblMathMatrixSparseMatrix(env, a3->m, a3->n, ap3, ai3, ax3).obj();
+
+        cs_free(a3);
+
+        return matrix;
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
     } catch (...) {
