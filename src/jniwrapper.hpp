@@ -73,7 +73,7 @@ public:
         if (!_ptr) {
             _ptr = _env->GetStringUTFChars(_obj, nullptr);
         }
-        return std::string(_ptr);
+        return {_ptr};
     }
 
 private:
