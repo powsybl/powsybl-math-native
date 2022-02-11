@@ -130,7 +130,7 @@ extern "C" {
 #endif
 
 /*
- * Class:     com.powsybl_math_matrix_SparseLUDecomposition
+ * Class:     com_powsybl_math_matrix_SparseLUDecomposition
  * Method:    init
  * Signature: (Ljava/lang/String;[I[I[D)V
  */
@@ -163,12 +163,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_init(J
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseLUDecomposition
+ * Class:     com_powsybl_math_matrix_SparseLUDecomposition
  * Method:    update
- * Signature: (Ljava/lang/String;[I[I[D)V
+ * Signature: (Ljava/lang/String;[I[I[DD)D
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update(JNIEnv * env, jobject, jstring j_id, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax,
-                                                                                 jdouble rgrowthThreshold) {
+JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update(JNIEnv * env, jobject, jstring j_id, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax,
+                                                                                    jdouble rgrowthThreshold) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         powsybl::jni::IntArray ap(env, j_ap);
@@ -176,17 +176,18 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update
         powsybl::jni::DoubleArray ax(env, j_ax);
 
         LUContext& context = MANAGER->findContext(id);
-
-        int ok = klu_refactor(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
-        if (ok == 0) {
-            throw std::runtime_error("klu_refactor error " + context.error());
-        }
-        ok = klu_rgrowth(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
-        if (ok == 0) {
-            throw std::runtime_error("klu_rgrowth error " + context.error());
+        if (rgrowthThreshold > 0) {
+            int ok = klu_refactor(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
+            if (ok == 0) {
+                throw std::runtime_error("klu_refactor error " + context.error());
+            }
+            ok = klu_rgrowth(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
+            if (ok == 0) {
+                throw std::runtime_error("klu_rgrowth error " + context.error());
+            }
         }
         // if rgrowth is too small we have to do a whole factorization
-        if (context.common.rgrowth < rgrowthThreshold) { // no idea what could be the right threshold but 1e-10 seems to work...
+        if (context.common.rgrowth < rgrowthThreshold) {
             if (klu_free_numeric(&context.numeric, &context.common) == 0) {
                 throw std::runtime_error("klu_free_numeric error " + context.error());
             }
@@ -195,6 +196,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update
                 throw std::runtime_error("klu_factor error " + context.error());
             }
         }
+        return context.common.rgrowth;
     } catch (const std::exception& e) {
         powsybl::jni::throwJavaLangRuntimeException(env, e.what());
     } catch (...) {
@@ -203,7 +205,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_update
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseLUDecomposition
+ * Class:     com_powsybl_math_matrix_SparseLUDecomposition
  * Method:    release
  * Signature: (Ljava/lang/String;)V
  */
@@ -229,9 +231,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_releas
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseLUDecomposition
+ * Class:     com_powsybl_math_matrix_SparseLUDecomposition
  * Method:    solve
- * Signature: (Ljava/lang/String;[D)V
+ * Signature: (Ljava/lang/String;[DZ)V
  */
 JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(JNIEnv * env, jobject, jstring j_id, jdoubleArray j_b, jboolean transpose) {
     try {
@@ -257,9 +259,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseLUDecomposition
+ * Class:     com_powsybl_math_matrix_SparseLUDecomposition
  * Method:    solve2
- * Signature: (Ljava/lang/String;IILjava/nio/ByteBuffer;)V
+ * Signature: (Ljava/lang/String;IILjava/nio/ByteBuffer;Z)V
  */
 JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2(JNIEnv * env, jobject, jstring j_id, jint m, jint n, jobject j_b, jboolean transpose) {
     try {
@@ -288,7 +290,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseMatrix
+ * Class:     com_powsybl_math_matrix_SparseMatrix
  * Method:    nativeInit
  * Signature: ()V
  */
@@ -304,12 +306,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseMatrix_nativeInit(JNIE
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseMatrix
+ * Class:     com_powsybl_math_matrix_SparseMatrix
  * Method:    times
  * Signature: (II[I[I[DII[I[I[D)Lcom/powsybl/math/matrix/SparseMatrix;
  */
 JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv * env, jobject, jint m1, jint n1, jintArray j_ap1, jintArray j_ai1, jdoubleArray j_ax1, 
-                                                                                 jint m2, jint n2, jintArray j_ap2, jintArray j_ai2, jdoubleArray j_ax2) {
+                                                                          jint m2, jint n2, jintArray j_ap2, jintArray j_ai2, jdoubleArray j_ax2) {
     try {
         powsybl::jni::IntArray ap1(env, j_ap1);
         powsybl::jni::IntArray ai1(env, j_ai1);
@@ -361,7 +363,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseMatrix
+ * Class:     com_powsybl_math_matrix_SparseMatrix
  * Method:    transpose
  * Signature: (II[I[I[D)Lcom/powsybl/math/matrix/SparseMatrix;
  */
@@ -399,7 +401,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_transpose(JN
 }
 
 /*
- * Class:     com.powsybl_math_matrix_SparseMatrix
+ * Class:     com_powsybl_math_matrix_SparseMatrix
  * Method:    add
  * Signature: (II[I[I[DII[I[I[DDD)Lcom/powsybl/math/matrix/SparseMatrix;
  */
