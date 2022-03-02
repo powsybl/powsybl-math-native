@@ -148,7 +148,7 @@ private:
     mutable jdouble* _ptr;
 };
 
-void throwJavaLangRuntimeException(JNIEnv* env, const char* msg);
+void throwMatrixException(JNIEnv* env, const char* msg);
 
 }  // namespace jni
 
