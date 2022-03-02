@@ -14,8 +14,8 @@ namespace powsybl {
 
 namespace jni {
 
-void throwJavaLangRuntimeException(JNIEnv* env, const char* msg) {
-    jclass clazz = env->FindClass("java/lang/RuntimeException");
+void throwMatrixException(JNIEnv* env, const char* msg) {
+    jclass clazz = env->FindClass("com/powsybl/math/matrix/MatrixException");
     env->ThrowNew(clazz, msg);
 }
 

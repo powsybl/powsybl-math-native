@@ -156,9 +156,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_init(J
             throw std::runtime_error("klu_factor error " + context.error());
         }
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
 }
 
@@ -198,9 +198,9 @@ JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_upd
         }
         return context.common.rgrowth;
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
 }
 
@@ -224,9 +224,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_releas
 
         MANAGER->removeContext(id);
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
 }
 
@@ -252,9 +252,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve(
             }
         }
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
 }
 
@@ -283,9 +283,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2
             }
         }
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
 }
 
@@ -299,9 +299,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseMatrix_nativeInit(JNIE
         // lookup caching
         powsybl::jni::ComPowsyblMathMatrixSparseMatrix::init(env);
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
 }
 
@@ -355,9 +355,9 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv
 
         return matrix;
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
     return nullptr;
 }
@@ -393,9 +393,9 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_transpose(JN
 
         return matrix;
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
     return nullptr;
 }
@@ -446,9 +446,9 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_add(JNIEnv *
 
         return matrix;
     } catch (const std::exception& e) {
-        powsybl::jni::throwJavaLangRuntimeException(env, e.what());
+        powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwJavaLangRuntimeException(env, "Unknown exception");
+        powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
     return nullptr;
 }
