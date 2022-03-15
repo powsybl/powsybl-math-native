@@ -187,7 +187,7 @@ JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_upd
             }
         }
         // if rgrowth is too small we have to do a whole factorization
-        if (context.common.rgrowth < rgrowthThreshold) {
+        if (rgrowthThreshold <= 0 || context.common.rgrowth < rgrowthThreshold) {
             if (klu_free_numeric(&context.numeric, &context.common) == 0) {
                 throw std::runtime_error("klu_free_numeric error " + context.error());
             }
