@@ -43,7 +43,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
+        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release --verbose
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
