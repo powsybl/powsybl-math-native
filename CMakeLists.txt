@@ -17,7 +17,7 @@ set(suitesparse_version "5.8.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
 
-set(THIRD_PARTY_DIR ${CMAKE_BINARY_DIR}/thirdparty)
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
     set(OS_BITS 64)
@@ -32,13 +32,13 @@ if(WIN32)
     set(LAPACK_DIR ${THIRD_PARTY_DIR}/suitesparse_source/lapack_windows/x${OS_BITS})
 endif()
 
-file(DOWNLOAD ${suitesparse_url} ${CMAKE_BINARY_DIR}/${suitesparse_archive} SHOW_PROGRESS)
+file(DOWNLOAD ${suitesparse_url} ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive} SHOW_PROGRESS)
 
 ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
     GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
     GIT_TAG "v1.5.0"
-    PATCH_COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_BINARY_DIR}/${suitesparse_archive}
+    PATCH_COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
