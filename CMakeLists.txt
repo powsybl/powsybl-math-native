@@ -32,7 +32,7 @@ if(WIN32)
     set(LAPACK_DIR ${THIRD_PARTY_DIR}/suitesparse_source/lapack_windows/x${OS_BITS})
 endif()
 
-file(DOWNLOAD ${suitesparse_url} ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive})
+file(DOWNLOAD ${suitesparse_url} ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive} SHOW_PROGRESS)
 
 ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
