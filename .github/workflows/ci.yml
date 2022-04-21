@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Install pre-requisites
         if: matrix.config.name == 'linux'
-        run: sudo apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev
+        run: sudo apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev openjdk-11-jdk
 
       - name: Checkout sources
         uses: actions/checkout@v1
@@ -43,7 +43,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --config Release
+        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
