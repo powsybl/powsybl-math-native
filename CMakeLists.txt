@@ -17,9 +17,6 @@ set(suitesparse_version "5.8.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
 
-message(STATUS "TOTO")
-message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
-
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
@@ -35,7 +32,7 @@ if(WIN32)
     set(LAPACK_DIR ${THIRD_PARTY_DIR}/suitesparse_source/lapack_windows/x${OS_BITS})
 endif()
 
-file(DOWNLOAD ${suitesparse_url} ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive} SHOW_PROGRESS)
+file(DOWNLOAD ${suitesparse_url} ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive})
 
 ExternalProject_Add(suitesparse
     SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source

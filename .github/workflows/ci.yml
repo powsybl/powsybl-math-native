@@ -45,13 +45,6 @@ jobs:
         shell: bash
         run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
-      - name: Toto
-        if: always()
-        shell: bash
-        run: |
-          pwd
-          ls -R $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
-
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
