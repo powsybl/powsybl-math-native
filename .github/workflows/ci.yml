@@ -50,7 +50,7 @@ jobs:
         shell: bash
         run: |
           pwd
-          ls -R
+          ls -R $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1

@@ -16,7 +16,8 @@ find_package(JNI REQUIRED)
 set(suitesparse_version "5.8.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
-
+message("TOTO")
+message(${CMAKE_CURRENT_BINARY_DIR})
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
