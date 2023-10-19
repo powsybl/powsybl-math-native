@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Install pre-requisites
         if: matrix.config.name == 'linux'
-        run: sudo apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev
+        run: apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev
 
       - name: Checkout sources
         uses: actions/checkout@v1
