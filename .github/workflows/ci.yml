@@ -24,12 +24,6 @@ jobs:
             artifact_name: libmath.dylib,
             artifact_path: osx_64
           }
-          - {
-            name: windows,
-            os: windows-2019,
-            artifact_name: math.dll,
-            artifact_path: windows_64/Release
-          }
 
     steps:
       - name: Install pre-requisites
