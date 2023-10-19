@@ -37,17 +37,19 @@ jobs:
         run: |
           apt update
           apt-get install -y cmake g++-4.8 gcc-4.8 liblapack-dev libblas-dev
+          echo ${{ github.workspace }}
+          echo $GITHUB_WORKSPACE
 
       - name: Checkout sources
         uses: actions/checkout@v1
 
       - name: Configure CMake
         shell: bash
-        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $HOME -B $HOME/build-${{ matrix.config.name }}
+        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
 
       - name: Build
         shell: bash
-        run: cmake --build $HOME/build-${{ matrix.config.name }} --parallel --config Release
+        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
