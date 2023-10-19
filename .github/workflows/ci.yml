@@ -37,7 +37,9 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S ${{ github.workspace }} -B ${{ github.workspace }}/build-${{ matrix.config.name }}
+        run: |
+          mkdir ${{ github.workspace }}/build-${{ matrix.config.name }}
+          cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S ${{ github.workspace }} -B ${{ github.workspace }}/build-${{ matrix.config.name }}
 
       - name: Build
         shell: bash
