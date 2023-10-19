@@ -36,7 +36,7 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install g++-4.8 gcc-4.8 liblapack-dev libblas-dev
+          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev
 
       - name: Checkout sources
         uses: actions/checkout@v1
