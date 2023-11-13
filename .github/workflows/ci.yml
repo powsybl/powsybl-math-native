@@ -27,7 +27,7 @@ jobs:
           apt-get install -y cmake g++-4.8 gcc-4.8 liblapack-dev libblas-dev
 
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Configure CMake
         shell: bash
