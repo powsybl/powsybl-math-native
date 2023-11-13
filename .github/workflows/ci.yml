@@ -27,13 +27,14 @@ jobs:
           apt-get install -y cmake g++-4.8 gcc-4.8 liblapack-dev libblas-dev
 
       - name: Checkout sources
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
 
       - name: Configure CMake
         shell: bash
         run:  |
           echo $GITHUB_WORKSPACE
           echo ${{ github.workspace }}
+          ls ${{ github.workspace }}
           cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
 
       - name: Build
