@@ -24,13 +24,12 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev snapd
-
-      - name: Install cmake
-        run: |
-          systemctl enable snapd
-          systemctl start snapd
-          snap install cmake --classic
+          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev apt-transport-https ca-certificates gnupg software-properties-common wget
+          wget https://apt.kitware.com/keys/kitware-archive-latest.asc
+          apt-key add kitware-archive-latest.asc
+          apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+          apt-get update
+          apt-get install cmake
 
       - name: Checkout sources
         uses: actions/checkout@v3
