@@ -28,6 +28,8 @@ jobs:
 
       - name: Install cmake
         run: |
+          systemctl enable snapd
+          systemctl start snapd
           snap install cmake --classic
 
       - name: Checkout sources
