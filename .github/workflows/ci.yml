@@ -40,6 +40,7 @@ jobs:
           echo $GITHUB_WORKSPACE
           echo ${{ github.workspace }}
           ls $GITHUB_WORKSPACE
+          cmake --version
           cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -H . -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
 
       - name: Build
