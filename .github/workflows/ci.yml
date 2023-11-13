@@ -25,6 +25,7 @@ jobs:
         run: |
           apt update
           apt-get install -y cmake g++-4.8 gcc-4.8 liblapack-dev libblas-dev
+          snap install cmake --classic
 
       - name: Checkout sources
         uses: actions/checkout@v3
