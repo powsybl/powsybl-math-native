@@ -25,7 +25,7 @@ jobs:
         run: |
           apt update
           apt-get install -y cmake g++-4.8 gcc-4.8 liblapack-dev libblas-dev snapd
-          systemctl restart snapd
+          service snapd start
           snap install cmake --classic
 
       - name: Checkout sources
