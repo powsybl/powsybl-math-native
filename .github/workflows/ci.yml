@@ -20,12 +20,12 @@ jobs:
           }
 
     steps:
+      # by default ubuntu 18.04 is shipped with cmake 3.10, to get a more recent version we get it from kitware repo
       - name: Install pre-requisites
         if: matrix.config.name == 'linux'
         run: |
           apt update
           apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev apt-transport-https ca-certificates gnupg software-properties-common wget
-# by default ubuntu 18.04 is shipped with cmake 3.10, to get a more recent version we get it from kitware repo
           wget https://apt.kitware.com/keys/kitware-archive-latest.asc
           apt-key add kitware-archive-latest.asc
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
@@ -37,14 +37,11 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run:  |
-          cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -H $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
+        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -H $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
 
       - name: Build
         shell: bash
-        run: |
-          echo $GITHUB_WORKSPACE
-          cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
+        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
