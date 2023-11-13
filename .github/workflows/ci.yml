@@ -29,7 +29,7 @@ jobs:
           apt-key add kitware-archive-latest.asc
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
           apt-get update
-          apt-get install cmake
+          apt-get install -y cmake
 
       - name: Checkout sources
         uses: actions/checkout@v3
