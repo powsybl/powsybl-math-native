@@ -24,8 +24,10 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install -y cmake g++-4.8 gcc-4.8 liblapack-dev libblas-dev snapd
-          service snapd start
+          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev snapd
+
+      - name: Install cmake
+        run: |
           snap install cmake --classic
 
       - name: Checkout sources
