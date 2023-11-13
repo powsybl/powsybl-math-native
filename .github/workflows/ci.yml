@@ -18,12 +18,6 @@ jobs:
             artifact_name: libmath.so,
             artifact_path: linux_64
           }
-          - {
-            name: macos,
-            os: macos-11,
-            artifact_name: libmath.dylib,
-            artifact_path: osx_64
-          }
 
     steps:
       - name: Install pre-requisites
@@ -37,13 +31,11 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run: |
-          mkdir ${{ github.workspace }}/build-${{ matrix.config.name }}
-          cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S ${{ github.workspace }} -B ${{ github.workspace }}/build-${{ matrix.config.name }}
+        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
 
       - name: Build
         shell: bash
-        run: cmake --build ${{ github.workspace }}/build-${{ matrix.config.name }} --parallel --config Release
+        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
