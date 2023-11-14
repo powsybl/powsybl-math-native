@@ -13,8 +13,9 @@ include(GNUInstallDirs)
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
-set(suitesparse_version "5.8.1")
+set(suitesparse_version "7.3.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
+set(suitesparse_source_dir_name "SuiteSparse-${suitesparse_version}")
 set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
 
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty)
@@ -28,23 +29,68 @@ else()
 endif()
 
 # SuiteSparse
-if(WIN32)
-    set(LAPACK_DIR ${THIRD_PARTY_DIR}/suitesparse_source/lapack_windows/x${OS_BITS})
-endif()
+file(DOWNLOAD ${suitesparse_url} ${THIRD_PARTY_DIR}/${suitesparse_archive})
+file(ARCHIVE_EXTRACT INPUT ${THIRD_PARTY_DIR}/${suitesparse_archive} DESTINATION ${THIRD_PARTY_DIR})
 
-file(DOWNLOAD ${suitesparse_url} ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive})
+set(suitesparse_common_cmake_args )
 
-ExternalProject_Add(suitesparse
-    SOURCE_DIR ${THIRD_PARTY_DIR}/suitesparse_source
-    GIT_REPOSITORY "https://github.com/jlblancoc/suitesparse-metis-for-windows.git"
-    GIT_TAG "v1.5.0"
-    PATCH_COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${suitesparse_archive}
+ExternalProject_Add(suitesparse_config
+    SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
+    SOURCE_SUBDIR SuiteSparse_config
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-               -DLAPACK_DIR=${LAPACK_DIR}
-               -DBUILD_METIS_DEFAULT=OFF
+               -DNOPENMP=true
+)
+
+ExternalProject_Add(suitesparse_amd
+        SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
+        SOURCE_SUBDIR AMD
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        DEPENDS suitesparse_config
+)
+
+ExternalProject_Add(suitesparse_colamd
+        SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
+        SOURCE_SUBDIR COLAMD
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        DEPENDS suitesparse_amd
+)
+
+ExternalProject_Add(suitesparse_btf
+        SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
+        SOURCE_SUBDIR BTF
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        DEPENDS suitesparse_colamd
+)
+
+ExternalProject_Add(suitesparse_klu
+        SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
+        SOURCE_SUBDIR KLU
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        DEPENDS suitesparse_btf
+)
+
+ExternalProject_Add(suitesparse_cxsparse
+        SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
+        SOURCE_SUBDIR CXSparse
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
+                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
 )
 
 set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib)
@@ -54,20 +100,13 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     set(SUITE_SPARSE_LIB_POSTFIX d${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
 
-if(WIN32)
-    set(SUITE_SPARSE_CONFIG_LIB ${SUITE_SPARSE_LIB_DIR}/suitesparseconfig${SUITE_SPARSE_LIB_POSTFIX})
-elseif(UNIX)
-    set(SUITE_SPARSE_LIB_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(SUITE_SPARSE_CONFIG_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}suitesparseconfig${SUITE_SPARSE_LIB_POSTFIX})
-else()
-    message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME}")
-endif()
-
+set(SUITE_SPARSE_CONFIG_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}suitesparseconfig${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_AMD_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}amd${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_COLAMD_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}colamd${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_BTF_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}btf${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_KLU_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}klu${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_CXSPARSE_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}cxsparse${SUITE_SPARSE_LIB_POSTFIX})
+
 set(SUITE_SPARSE_INCLUDE ${THIRD_PARTY_DIR}/suitesparse/include)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -78,7 +117,7 @@ set(SOURCES
 )
 add_library(math SHARED ${SOURCES})
 
-add_dependencies(math suitesparse)
+add_dependencies(math suitesparse_klu suitesparse_cxsparse)
 
 target_include_directories(math
     PUBLIC
