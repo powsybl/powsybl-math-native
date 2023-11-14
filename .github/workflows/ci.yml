@@ -30,13 +30,6 @@ jobs:
           apt-get update
           apt-get install -y cmake
 
-      - name: Install Windows pre-requisites
-        if: matrix.config.name == 'windows'
-        run: |
-          C:\Miniconda\Scripts\conda.exe create --name myenv
-          C:\Miniconda\Scripts\conda.exe activate myenv
-          C:\Miniconda\Scripts\conda.exe install -c conda-forge blas
-
       - name: Checkout sources
         uses: actions/checkout@v3
 
