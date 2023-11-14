@@ -11,12 +11,6 @@ jobs:
       matrix:
         config:
           - {
-            name: macos,
-            os: macos-11,
-            artifact_name: libmath.dylib,
-            artifact_path: osx_64
-          }
-          - {
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
@@ -35,6 +29,10 @@ jobs:
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
           apt-get update
           apt-get install -y cmake
+
+      - name: Install Windows pre-requisites
+        if: matrix.config.name == 'windows'
+        run: conda install -c conda-forge blas
 
       - name: Checkout sources
         uses: actions/checkout@v3

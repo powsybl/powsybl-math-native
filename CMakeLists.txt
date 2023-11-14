@@ -40,7 +40,6 @@ ExternalProject_Add(suitesparse_config
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                -DNOPENMP=true
-               -DBLA_VENDOR=OpenBLAS
 )
 
 ExternalProject_Add(suitesparse_amd
