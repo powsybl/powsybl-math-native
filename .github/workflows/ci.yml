@@ -33,9 +33,9 @@ jobs:
       - name: Install Windows pre-requisites
         if: matrix.config.name == 'windows'
         run: |
-          %CONDA%\Scripts\conda.exe create --name myenv
-          %CONDA%\Scripts\conda.exe activate myenv
-          %CONDA%\Scripts\conda.exe install -c conda-forge blas
+          C:\Miniconda\Scripts\conda.exe create --name myenv
+          C:\Miniconda\Scripts\conda.exe activate myenv
+          C:\Miniconda\Scripts\conda.exe install -c conda-forge blas
 
       - name: Checkout sources
         uses: actions/checkout@v3
