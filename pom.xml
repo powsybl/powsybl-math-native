@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent</artifactId>
-        <version>3</version>
+        <version>14</version>
         <relativePath/>
     </parent>
 
@@ -46,13 +46,6 @@
         </developer>
     </developers>
 
-    <properties>
-        <maven.build-helper.version>3.1.0</maven.build-helper.version>
-
-        <groovy.version>2.5.8</groovy.version>
-        <groovydoc.classifier>javadoc</groovydoc.classifier>
-    </properties>
-
     <build>
         <plugins>
             <plugin>
@@ -64,16 +57,10 @@
                             <Automatic-Module-Name>com.powsybl.mathnative</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
+                    <excludes>
+                      <exclude>com/powsybl/mathnative/MathNativeJavadocPlaceholder.class</exclude>
+                    </excludes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${maven.build-helper.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -89,10 +76,9 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>${maven.build-helper.version}</version>
                         <executions>
                             <execution>
-                                <id>add-source</id>
+                                <id>add-cpp-source</id>
                                 <phase>generate-sources</phase>
                                 <goals>
                                     <goal>add-source</goal>
