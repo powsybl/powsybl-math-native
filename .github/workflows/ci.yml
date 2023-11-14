@@ -11,14 +11,6 @@ jobs:
       matrix:
         config:
           - {
-            name: linux,
-            os: ubuntu-20.04,
-            container: 'ubuntu:18.04',
-            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
-            artifact_name: libmath.so,
-            artifact_path: linux_64
-          }
-          - {
             name: macos,
             os: macos-11,
             artifact_name: libmath.dylib,
