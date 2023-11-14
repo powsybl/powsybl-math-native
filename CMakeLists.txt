@@ -32,8 +32,6 @@ endif()
 file(DOWNLOAD ${suitesparse_url} ${THIRD_PARTY_DIR}/${suitesparse_archive})
 file(ARCHIVE_EXTRACT INPUT ${THIRD_PARTY_DIR}/${suitesparse_archive} DESTINATION ${THIRD_PARTY_DIR})
 
-set(suitesparse_common_cmake_args )
-
 ExternalProject_Add(suitesparse_config
     SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
     SOURCE_SUBDIR SuiteSparse_config
