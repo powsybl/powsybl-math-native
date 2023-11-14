@@ -89,6 +89,7 @@ ExternalProject_Add(suitesparse_cxsparse
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        DEPENDS suitesparse_config
 )
 
 set(SUITE_SPARSE_LIB_DIR ${THIRD_PARTY_DIR}/suitesparse/lib)
