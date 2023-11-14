@@ -32,7 +32,7 @@ jobs:
 
       - name: Install Windows pre-requisites
         if: matrix.config.name == 'windows'
-        run: conda install -c conda-forge blas
+        run: C:\Miniconda\Scripts\conda.exe install -c conda-forge blas
 
       - name: Checkout sources
         uses: actions/checkout@v3
