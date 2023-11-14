@@ -19,7 +19,7 @@ jobs:
 
     steps:
       # by default ubuntu 18.04 is shipped with cmake 3.10, to get a more recent version we get it from kitware repo
-      - name: Install pre-requisites
+      - name: Install Linux pre-requisites
         if: matrix.config.name == 'linux'
         run: |
           apt update
@@ -32,7 +32,10 @@ jobs:
 
       - name: Install Windows pre-requisites
         if: matrix.config.name == 'windows'
-        run: C:\Miniconda\Scripts\conda.exe install -c conda-forge blas
+        run: |
+          %CONDA%\Scripts\conda.exe create --name myenv
+          %CONDA%\Scripts\conda.exe activate myenv
+          %CONDA%\Scripts\conda.exe install -c conda-forge blas
 
       - name: Checkout sources
         uses: actions/checkout@v3
