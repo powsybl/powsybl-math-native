@@ -14,9 +14,21 @@ jobs:
             name: linux,
             os: ubuntu-20.04,
             container: 'ubuntu:18.04',
-            cmake_options: '',
+            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
             artifact_name: libmath.so,
             artifact_path: linux_64
+          }
+          - {
+            name: macos,
+            os: macos-11,
+            artifact_name: libmath.dylib,
+            artifact_path: osx_64
+          }
+          - {
+            name: windows,
+            os: windows-2019,
+            artifact_name: math.dll,
+            artifact_path: windows_64/Release
           }
 
     steps:
@@ -25,7 +37,7 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install -y g++ gcc liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget default-jdk git
+          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget default-jdk git
           wget https://apt.kitware.com/keys/kitware-archive-latest.asc
           apt-key add kitware-archive-latest.asc
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
