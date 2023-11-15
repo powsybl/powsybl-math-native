@@ -155,11 +155,12 @@ elseif(UNIX)
     )
 endif()
 
-target_link_libraries(math
+target_link_libraries(
     ${SUITE_SPARSE_CONFIG_LIB}
     ${SUITE_SPARSE_AMD_LIB}
     ${SUITE_SPARSE_COLAMD_LIB}
     ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
+    math
 )
