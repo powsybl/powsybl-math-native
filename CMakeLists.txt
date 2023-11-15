@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.18.0...3.27.7)
 
 project(math)
 
@@ -154,10 +154,10 @@ elseif(UNIX)
 endif()
 
 target_link_libraries(math
+    ${SUITE_SPARSE_CONFIG_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
     ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_COLAMD_LIB}
     ${SUITE_SPARSE_AMD_LIB}
-    ${SUITE_SPARSE_CONFIG_LIB}
 )
