@@ -37,7 +37,7 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget default-jdk git
+          apt-get install -y g++ gcc liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget default-jdk git
           wget https://apt.kitware.com/keys/kitware-archive-latest.asc
           apt-key add kitware-archive-latest.asc
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
