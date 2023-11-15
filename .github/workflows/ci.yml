@@ -18,18 +18,6 @@ jobs:
             artifact_name: libmath.so,
             artifact_path: linux_64
           }
-          - {
-            name: macos,
-            os: macos-11,
-            artifact_name: libmath.dylib,
-            artifact_path: osx_64
-          }
-          - {
-            name: windows,
-            os: windows-2019,
-            artifact_name: math.dll,
-            artifact_path: windows_64/Release
-          }
 
     steps:
       # by default ubuntu 18.04 is shipped with cmake 3.10, to get a more recent version we get it from kitware repo
