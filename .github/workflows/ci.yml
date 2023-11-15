@@ -11,6 +11,20 @@ jobs:
       matrix:
         config:
           - {
+            name: linux,
+            os: ubuntu-20.04,
+            container: 'ubuntu:18.04',
+            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
+            artifact_name: libmath.so,
+            artifact_path: linux_64
+          }
+          - {
+            name: macos,
+            os: macos-11,
+            artifact_name: libmath.dylib,
+            artifact_path: osx_64
+          }
+          - {
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
@@ -19,7 +33,7 @@ jobs:
 
     steps:
       # by default ubuntu 18.04 is shipped with cmake 3.10, to get a more recent version we get it from kitware repo
-      - name: Install Linux pre-requisites
+      - name: Install pre-requisites
         if: matrix.config.name == 'linux'
         run: |
           apt update
