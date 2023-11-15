@@ -156,6 +156,7 @@ elseif(UNIX)
 endif()
 
 target_link_libraries(math
+    PUBLIC
     ${SUITE_SPARSE_CONFIG_LIB}
     ${SUITE_SPARSE_AMD_LIB}
     ${SUITE_SPARSE_COLAMD_LIB}
