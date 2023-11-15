@@ -120,7 +120,6 @@ set(SOURCES
     src/lu.cpp
     src/jniwrapper.cpp
 )
-
 add_library(math SHARED ${SOURCES})
 
 add_dependencies(math suitesparse_klu suitesparse_cxsparse)
@@ -154,11 +153,10 @@ elseif(UNIX)
 endif()
 
 target_link_libraries(math
-    PUBLIC
-    ${SUITE_SPARSE_CONFIG_LIB}
-    ${SUITE_SPARSE_AMD_LIB}
-    ${SUITE_SPARSE_COLAMD_LIB}
-    ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
+    ${SUITE_SPARSE_BTF_LIB}
+    ${SUITE_SPARSE_COLAMD_LIB}
+    ${SUITE_SPARSE_AMD_LIB}
+    ${SUITE_SPARSE_CONFIG_LIB}
 )
