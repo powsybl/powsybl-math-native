@@ -13,8 +13,6 @@ include(GNUInstallDirs)
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 set(suitesparse_version "7.3.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_source_dir_name "SuiteSparse-${suitesparse_version}")
@@ -114,7 +112,6 @@ set(SUITE_SPARSE_COLAMD_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}co
 set(SUITE_SPARSE_BTF_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}btf${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_KLU_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}klu${SUITE_SPARSE_LIB_POSTFIX})
 set(SUITE_SPARSE_CXSPARSE_LIB ${SUITE_SPARSE_LIB_DIR}/${SUITE_SPARSE_LIB_PREFIX}cxsparse${SUITE_SPARSE_LIB_POSTFIX})
-
 set(SUITE_SPARSE_INCLUDE ${THIRD_PARTY_DIR}/suitesparse/include)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -124,13 +121,11 @@ set(SOURCES
     src/jniwrapper.cpp
 )
 
-add_library(mathlib STATIC ${SOURCES})
+add_library(math SHARED ${SOURCES})
 
-add_library(math SHARED src/empty.cpp)
+add_dependencies(math suitesparse_klu suitesparse_cxsparse)
 
-add_dependencies(mathlib suitesparse_klu suitesparse_cxsparse)
-
-target_include_directories(mathlib
+target_include_directories(math
     PUBLIC
     ${JNI_INCLUDE_DIRS}
     ${SUITE_SPARSE_INCLUDE}
@@ -166,5 +161,4 @@ target_link_libraries(math
     ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
-    mathlib
 )
