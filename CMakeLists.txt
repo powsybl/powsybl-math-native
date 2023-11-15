@@ -13,8 +13,6 @@ include(GNUInstallDirs)
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 set(suitesparse_version "7.3.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_source_dir_name "SuiteSparse-${suitesparse_version}")
@@ -124,13 +122,11 @@ set(SOURCES
     src/jniwrapper.cpp
 )
 
-add_library(mathlib STATIC ${SOURCES})
+add_library(math SHARED ${SOURCES})
 
-add_library(math SHARED src/empty.cpp)
+add_dependencies(math suitesparse_klu suitesparse_cxsparse)
 
-add_dependencies(mathlib suitesparse_klu suitesparse_cxsparse)
-
-target_include_directories(mathlib
+target_include_directories(math
     PUBLIC
     ${JNI_INCLUDE_DIRS}
     ${SUITE_SPARSE_INCLUDE}
@@ -159,12 +155,10 @@ elseif(UNIX)
 endif()
 
 target_link_libraries(math
-    PUBLIC
-    ${SUITE_SPARSE_CONFIG_LIB}
-    ${SUITE_SPARSE_AMD_LIB}
-    ${SUITE_SPARSE_COLAMD_LIB}
-    ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
+    ${SUITE_SPARSE_BTF_LIB}
+    ${SUITE_SPARSE_COLAMD_LIB}
+    ${SUITE_SPARSE_AMD_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
-    mathlib
+    ${SUITE_SPARSE_CONFIG_LIB}
 )
