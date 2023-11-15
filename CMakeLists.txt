@@ -123,11 +123,14 @@ set(SOURCES
     src/lu.cpp
     src/jniwrapper.cpp
 )
-add_library(math SHARED ${SOURCES})
 
-add_dependencies(math suitesparse_klu suitesparse_cxsparse)
+add_library(mathlib STATIC ${SOURCES})
 
-target_include_directories(math
+add_library(math SHARED src/empty.cpp)
+
+add_dependencies(mathlib suitesparse_klu suitesparse_cxsparse)
+
+target_include_directories(mathlib
     PUBLIC
     ${JNI_INCLUDE_DIRS}
     ${SUITE_SPARSE_INCLUDE}
@@ -163,4 +166,5 @@ target_link_libraries(math
     ${SUITE_SPARSE_BTF_LIB}
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}
+    mathlib
 )
