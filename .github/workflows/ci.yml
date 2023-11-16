@@ -26,6 +26,7 @@ jobs:
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
+            artifact_path: Release
           }
 
     steps:
@@ -46,17 +47,17 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build-${{ matrix.config.name }}
+        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build
 
       - name: Build
         shell: bash
-        run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
+        run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.artifact_name }}
-          path: $GITHUB_WORKSPACE/build-${{ matrix.config.name }}/${{ matrix.config.artifact_name }}
+          path: ${{ runner.workspace }}/powsybl-math-native/build/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
 
   package:
     name: Package libraries to JAR
