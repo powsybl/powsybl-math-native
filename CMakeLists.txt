@@ -41,6 +41,7 @@ ExternalProject_Add(suitesparse_config
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DNOPENMP=true
+               -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
 )
 
 ExternalProject_Add(suitesparse_amd
