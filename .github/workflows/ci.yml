@@ -56,7 +56,7 @@ jobs:
         run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.artifact_name }}
           path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
@@ -67,12 +67,33 @@ jobs:
     needs: build
 
     steps:
-      - name: Download wheels
+      - name: Download Linux library
         uses: actions/download-artifact@v3
         with:
-          path: download
+          name: libmath.so
+          path: target/natives/linux_64/
 
-      - name: Test
+      - name: Download MacOS library
+        uses: actions/download-artifact@v3
+        with:
+          name: libmath.dylib
+          path: target/natives/osx_64/
+
+      - name: Download Windows library
+        uses: actions/download-artifact@v3
+        with:
+          name: math.dll
+          path: target/natives/windows_64/
+
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Build Jar
         shell: bash
-        run: |
-          ls
+        run: mvn install
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: powsybl-math-native.jar
+          path: target/*.jar
