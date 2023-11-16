@@ -72,26 +72,23 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: libmath.so
-          path: target/natives/linux_64/
+          path: target/classes/natives/linux_64/
 
       - name: Download MacOS library
         uses: actions/download-artifact@v3
         with:
           name: libmath.dylib
-          path: target/natives/osx_64/
+          path: target/classes/natives/osx_64/
 
       - name: Download Windows library
         uses: actions/download-artifact@v3
         with:
           name: math.dll
-          path: target/natives/windows_64/
+          path: target/classes/natives/windows_64/
 
       - name: Build Jar
         shell: bash
-        run: |
-          pwd
-          ls -R
-          mvn install
+        run: mvn install
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
