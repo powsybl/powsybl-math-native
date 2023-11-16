@@ -88,7 +88,10 @@ jobs:
 
       - name: Build Jar
         shell: bash
-        run: mvn install
+        run: |
+          pwd
+          ls -R
+          mvn install
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
