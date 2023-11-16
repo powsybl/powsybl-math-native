@@ -42,6 +42,8 @@ ExternalProject_Add(suitesparse_config
     SOURCE_SUBDIR SuiteSparse_config
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+               -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+               -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                -DNOPENMP=true
                -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
 )
@@ -51,6 +53,8 @@ ExternalProject_Add(suitesparse_amd
         SOURCE_SUBDIR AMD
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
         DEPENDS suitesparse_config
 )
@@ -60,6 +64,8 @@ ExternalProject_Add(suitesparse_colamd
         SOURCE_SUBDIR COLAMD
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
         DEPENDS suitesparse_amd
 )
@@ -69,6 +75,8 @@ ExternalProject_Add(suitesparse_btf
         SOURCE_SUBDIR BTF
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
         DEPENDS suitesparse_colamd
 )
@@ -78,6 +86,8 @@ ExternalProject_Add(suitesparse_klu
         SOURCE_SUBDIR KLU
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
         DEPENDS suitesparse_btf
 )
@@ -87,6 +97,8 @@ ExternalProject_Add(suitesparse_cxsparse
         SOURCE_SUBDIR CXSparse
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_DIR}/suitesparse
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_POSITION_INDEPENDENT_CODE=ON # otherwise we get a link error
         DEPENDS suitesparse_config
 )
