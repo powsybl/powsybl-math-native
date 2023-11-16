@@ -33,7 +33,9 @@ file(DOWNLOAD ${suitesparse_url} ${THIRD_PARTY_DIR}/${suitesparse_archive})
 file(ARCHIVE_EXTRACT INPUT ${THIRD_PARTY_DIR}/${suitesparse_archive} DESTINATION ${THIRD_PARTY_DIR})
 # patch CMakeLists.txt of SuiteSparse_config module to avoid blas check as it is hard to compile it on windows
 # and that we don't need it for the suitesparse modules we beed (amd, colamd, btf, klu and cxsparse)
-file(COPY SuiteSparse_config_patch/CMakeLists.txt DESTINATION ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}/SuiteSparse_config/)
+file(READ ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}/SuiteSparse_config/CMakeLists.txt FILE_CONTENTS)
+string(REPLACE "include ( SuiteSparseBLAS )" "set ( SuiteSparse_BLAS_integer \"int32_t\" )\nset ( BLAS_FOUND true )" FILE_CONTENTS ${FILE_CONTENTS})
+file(WRITE ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}/SuiteSparse_config/CMakeLists.txt ${FILE_CONTENTS})
 
 ExternalProject_Add(suitesparse_config
     SOURCE_DIR ${THIRD_PARTY_DIR}/${suitesparse_source_dir_name}
