@@ -60,3 +60,19 @@ jobs:
         with:
           name: ${{ matrix.config.artifact_name }}
           path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
+
+  package:
+    name: Package libraries to JAR
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v3
+        with:
+          path: download
+
+      - name: Test
+        shell: bash
+        run: |
+          ls
