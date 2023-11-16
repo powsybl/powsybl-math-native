@@ -138,28 +138,6 @@ target_include_directories(math
     ${SUITE_SPARSE_INCLUDE}
 )
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    set(ARCHITECTURE windows_${OS_BITS})
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    set(ARCHITECTURE linux_${OS_BITS})
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    set(ARCHITECTURE osx_${OS_BITS})
-else()
-    message(FATAL_ERROR "System not supported: ${CMAKE_SYSTEM_NAME}")
-endif()
-
-if(WIN32)
-    set_target_properties(math
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
-    )
-elseif(UNIX)
-    set_target_properties(math
-        PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
-    )
-endif()
-
 target_link_libraries(math
     ${SUITE_SPARSE_KLU_LIB}
     ${SUITE_SPARSE_CXSPARSE_LIB}

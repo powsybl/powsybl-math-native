@@ -16,19 +16,16 @@ jobs:
             container: 'ubuntu:18.04',
             cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
             artifact_name: libmath.so,
-            artifact_path: linux_64
           }
           - {
             name: macos,
             os: macos-11,
             artifact_name: libmath.dylib,
-            artifact_path: osx_64
           }
           - {
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
-            artifact_path: windows_64/Release
           }
 
     steps:
@@ -59,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.artifact_name }}
-          path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
+          path: $GITHUB_WORKSPACE/build-${{ matrix.config.name }}/${{ matrix.config.artifact_name }}
 
   package:
     name: Package libraries to JAR
@@ -67,6 +64,9 @@ jobs:
     needs: build
 
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
       - name: Download Linux library
         uses: actions/download-artifact@v3
         with:
@@ -84,9 +84,6 @@ jobs:
         with:
           name: math.dll
           path: target/natives/windows_64/
-
-      - name: Checkout sources
-        uses: actions/checkout@v3
 
       - name: Build Jar
         shell: bash
