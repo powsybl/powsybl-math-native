@@ -28,7 +28,7 @@ jobs:
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
-            artifact_path: windows_64/Release
+            artifact_path: windows_64
           }
 
     steps:
@@ -63,7 +63,9 @@ jobs:
 
       - name: Test
         shell: bash
-        run: mvn --batch-mode package
+        run: |
+          ls -R target/
+          mvn --batch-mode package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
