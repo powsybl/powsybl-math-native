@@ -5,7 +5,7 @@ This project is the C++ implementation of [powsybl-math](https://github.com/pows
 To build `powsybl-math-native`, you need the following dependencies:
 - [CMake](https://cmake.org/download)
 - C++ compiler (gcc, clang or [Visual Studio](https://visualstudio.microsoft.com/fr/vs/features/cplusplus/))
-- Java (17 or later)
+- Java (11 or later)
 
 ## Compilation
 
