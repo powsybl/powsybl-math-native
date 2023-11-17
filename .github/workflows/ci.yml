@@ -63,9 +63,7 @@ jobs:
 
       - name: Test
         shell: bash
-        run: |
-          ls -R target/
-          mvn --batch-mode package
+        run: mvn --batch-mode package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
