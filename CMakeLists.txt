@@ -13,6 +13,11 @@ include(GNUInstallDirs)
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
+get_cmake_property(_variableNames VARIABLES)
+foreach (_variableName ${_variableNames})
+    message("${_variableName}=${${_variableName}}")
+endforeach()
+
 set(suitesparse_version "7.3.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_source_dir_name "SuiteSparse-${suitesparse_version}")
