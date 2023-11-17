@@ -25,8 +25,7 @@ jobs:
           - {
             name: windows,
             os: windows-2019,
-            artifact_name: math.dll,
-            artifact_path: Release
+            artifact_name: math.dll
           }
 
     steps:
@@ -35,12 +34,18 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget default-jdk git
+          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget git maven
           wget https://apt.kitware.com/keys/kitware-archive-latest.asc
           apt-key add kitware-archive-latest.asc
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
           apt-get update
           apt-get install -y cmake
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
       - name: Checkout sources
         uses: actions/checkout@v3
@@ -53,11 +58,15 @@ jobs:
         shell: bash
         run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release
 
+      - name: Test
+        shell: bash
+        run: mvn --batch-mode package
+
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.artifact_name }}
-          path: ${{ runner.workspace }}/powsybl-math-native/build/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
+          path: ${{ runner.workspace }}/powsybl-math-native/build/${{ matrix.config.artifact_name }}
 
   package:
     name: Package libraries to JAR
