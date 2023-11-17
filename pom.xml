@@ -46,6 +46,12 @@
         </developer>
     </developers>
 
+    <properties>
+        <nativelibloader.version>2.4.0</nativelibloader.version>
+        <junit-jupiter.version>5.10.0</junit-jupiter.version>
+        <slf4j.version>2.0.9</slf4j.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -95,4 +101,31 @@
             </build>
         </profile>
     </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>native-lib-loader</artifactId>
+            <version>${nativelibloader.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

@@ -55,6 +55,10 @@ jobs:
         shell: bash
         run: cmake --build $GITHUB_WORKSPACE/build-${{ matrix.config.name }} --parallel --config Release
 
+      - name: Test
+        shell: bash
+        run: mvn package
+
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
