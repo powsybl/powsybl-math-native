@@ -13,11 +13,6 @@ include(GNUInstallDirs)
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
-get_cmake_property(_variableNames VARIABLES)
-foreach (_variableName ${_variableNames})
-    message("${_variableName}=${${_variableName}}")
-endforeach()
-
 set(suitesparse_version "7.3.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_source_dir_name "SuiteSparse-${suitesparse_version}")
@@ -155,8 +150,8 @@ endif()
 
 if(WIN32)
     set_target_properties(math
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
+            PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/target/classes/natives/${ARCHITECTURE}"
     )
 elseif(UNIX)
     set_target_properties(math
