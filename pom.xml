@@ -47,6 +47,7 @@
     </developers>
 
     <properties>
+        <java.version>11</java.version>
         <nativelibloader.version>2.4.0</nativelibloader.version>
         <junit-jupiter.version>5.10.0</junit-jupiter.version>
         <slf4j.version>2.0.9</slf4j.version>
