@@ -13,8 +13,8 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <suitesparse/klu.h>
-#include <suitesparse/cs.h>
+#include <klu.h>
+#include <cs.h>
 #include "jniwrapper.hpp"
 
 namespace powsybl {
