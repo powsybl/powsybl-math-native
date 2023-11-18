@@ -59,7 +59,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release --verbose
+        run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release
 
       - name: Test
         shell: bash
