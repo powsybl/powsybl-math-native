@@ -23,7 +23,7 @@ set(suitesparse_version "7.3.1")
 set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
 
-# SuiteSparse
+# download SuiteSparse archive
 file(DOWNLOAD ${suitesparse_url} ${THIRD_PARTY_DIR}/${suitesparse_archive})
 file(ARCHIVE_EXTRACT INPUT ${THIRD_PARTY_DIR}/${suitesparse_archive} DESTINATION ${THIRD_PARTY_DIR})
 set(suitesparse_source ${THIRD_PARTY_DIR}/SuiteSparse-${suitesparse_version})
@@ -69,7 +69,6 @@ add_dependencies(math KLU_static CXSparse_static)
 target_include_directories(math
     PUBLIC
     ${JNI_INCLUDE_DIRS}
-    ${SUITE_SPARSE_INCLUDE}
 )
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
