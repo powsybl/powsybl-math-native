@@ -23,7 +23,7 @@ namespace powsybl {
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver(JNIEnv * env, jobject) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver_test(JNIEnv * env, jobject) {
     try {
         SUNContext sunctx;
         int error = SUNContext_Create(nullptr, &sunctx);
