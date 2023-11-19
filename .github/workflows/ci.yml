@@ -14,7 +14,7 @@ jobs:
             name: linux,
             os: ubuntu-20.04,
             container: 'ubuntu:18.04',
-            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8',
+            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8 -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -std=c++1y"',
             artifact_name: libmath.so,
             artifact_path: linux_64
           }
