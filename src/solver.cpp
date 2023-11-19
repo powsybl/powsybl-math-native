@@ -15,24 +15,47 @@
 #include <sunlinsol/sunlinsol_klu.h>
 #include <nvector/nvector_serial.h>
 #include "jniwrapper.hpp"
+#include "solver.hpp"
 
 namespace powsybl {
 
-    static int eval(N_Vector u, N_Vector f, void* user_data) {
-        std::cout << "eval" << std::endl;
-        // TODO
-        return 0;
-    }
+namespace jni {
 
-    static int eval_der(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
-        std::cout << "eval_der" << std::endl;
-        // TODO
-        return 0;
-    }
+jclass ComPowsyblMathSolverNewtonKrylovSolverContext::_cls = nullptr;
+jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_logError = nullptr;
 
-    static void error_handler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
-        std::cerr << error_code << " " << module << " " << function << " " << msg << std::endl;
-    }
+void ComPowsyblMathSolverNewtonKrylovSolverContext::init(JNIEnv* env) {
+    jclass localCls = env->FindClass("com/powsybl/math/solver/NewtonKrylovSolverContext");
+    _cls = reinterpret_cast<jclass>(env->NewGlobalRef(localCls));
+    _logError = env->GetMethodID(_cls, "logError", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+}
+
+ComPowsyblMathSolverNewtonKrylovSolverContext::ComPowsyblMathSolverNewtonKrylovSolverContext(JNIEnv* env, jobject obj)
+    : JniWrapper<jobject>(env, obj) {
+}
+
+void ComPowsyblMathSolverNewtonKrylovSolverContext::logError(int errorCode, const std::string& module, const std::string& function, const std::string& message) {
+
+}
+
+}  // namespace jni
+
+static int eval(N_Vector u, N_Vector f, void* user_data) {
+    std::cout << "eval" << std::endl;
+    // TODO
+    return 0;
+}
+
+static int eval_der(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
+    std::cout << "eval_der" << std::endl;
+    // TODO
+    return 0;
+}
+
+static void error_handler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
+    std::cerr << error_code << " " << module << " " << function << " " << msg << std::endl;
+}
+
 }
 
 #ifdef __cplusplus

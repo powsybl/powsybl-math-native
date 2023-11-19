@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * @file lu.hpp
+ * @file solver.hpp
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
@@ -12,15 +12,17 @@ namespace powsybl {
 
 namespace jni {
 
-class ComPowsyblMathMatrixSparseMatrix : public JniWrapper<jobject> {
+class ComPowsyblMathSolverNewtonKrylovSolverContext : public JniWrapper<jobject> {
 public:
-    ComPowsyblMathMatrixSparseMatrix(JNIEnv* env, int m, int n, const IntArray& ap, const IntArray& ai, const DoubleArray& ax);
+    ComPowsyblMathSolverNewtonKrylovSolverContext(JNIEnv* env, jobject ob);
 
     static void init(JNIEnv* env);
 
+    void logError(int errorCode, const std::string& module, const std::string& function, const std::string& message);
+
 private:
     static jclass _cls;
-    static jmethodID _constructor;
+    static jmethodID _logError;
 };
 
 }  // namespace jni
