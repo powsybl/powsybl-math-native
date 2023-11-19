@@ -18,6 +18,9 @@
 
 namespace powsybl {
 
+    static int eval(N_Vector x, N_Vector values, void* user_data) {
+        return 0;
+    }
 }
 
 #ifdef __cplusplus
@@ -46,6 +49,20 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver_test(JNIEnv * e
         if (!ls) {
             throw std::runtime_error("SUNLinSol_KLU error");
         }
+
+        void* kin_mem = KINCreate(sunctx);
+        if (!kin_mem) {
+            throw std::runtime_error("KINCreate error");
+        }
+
+        error = KINInit(kin_mem, powsybl::eval, x0);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINInit error " + std::to_string(error));
+        }
+
+        // TODO
+
+        KINFree(&kin_mem);
 
         error = SUNLinSolFree_KLU(ls);
         if (error != 0) {
