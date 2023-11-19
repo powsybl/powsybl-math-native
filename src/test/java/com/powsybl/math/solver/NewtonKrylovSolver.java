@@ -6,10 +6,16 @@
  */
 package com.powsybl.math.solver;
 
+import com.powsybl.math.MathNative;
+
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class KinsolSolver {
+public class NewtonKrylovSolver {
 
-    public native void test();
+    static {
+        MathNative.init();
+    }
+
+    public native void solve(NewtonKrylovSolverContext context);
 }

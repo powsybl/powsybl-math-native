@@ -7,7 +7,7 @@
 package com.powsybl.mathnative;
 
 import com.powsybl.math.matrix.SparseMatrix;
-import com.powsybl.math.solver.KinsolSolver;
+import com.powsybl.math.solver.NewtonKrylovSolver;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -18,7 +18,7 @@ class SolverTest {
     @Test
     void test() {
         SparseMatrix m = new SparseMatrix(0, 0, new int[] {}, new int[] {}, new double[] {});
-        KinsolSolver solver = new KinsolSolver();
+        NewtonKrylovSolver solver = new NewtonKrylovSolver();
         solver.test();
     }
 }

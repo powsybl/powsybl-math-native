@@ -291,22 +291,6 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2
 
 /*
  * Class:     com_powsybl_math_matrix_SparseMatrix
- * Method:    nativeInit
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseMatrix_nativeInit(JNIEnv * env, jclass) {
-    try {
-        // lookup caching
-        powsybl::jni::ComPowsyblMathMatrixSparseMatrix::init(env);
-    } catch (const std::exception& e) {
-        powsybl::jni::throwMatrixException(env, e.what());
-    } catch (...) {
-        powsybl::jni::throwMatrixException(env, "Unknown exception");
-    }
-}
-
-/*
- * Class:     com_powsybl_math_matrix_SparseMatrix
  * Method:    times
  * Signature: (II[I[I[DII[I[I[D)Lcom/powsybl/math/matrix/SparseMatrix;
  */

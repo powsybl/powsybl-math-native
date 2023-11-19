@@ -148,7 +148,9 @@ private:
     mutable jdouble* _ptr;
 };
 
+void throwMathException(JNIEnv* env, const char* msg);
 void throwMatrixException(JNIEnv* env, const char* msg);
+void throwSolverException(JNIEnv* env, const char* msg);
 
 }  // namespace jni
 

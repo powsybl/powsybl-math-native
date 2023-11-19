@@ -14,9 +14,21 @@ namespace powsybl {
 
 namespace jni {
 
-void throwMatrixException(JNIEnv* env, const char* msg) {
-    jclass clazz = env->FindClass("com/powsybl/math/matrix/MatrixException");
+void throwException(JNIEnv* env, const char* msg, const std::string& className) {
+    jclass clazz = env->FindClass(className.c_str());
     env->ThrowNew(clazz, msg);
+}
+
+void throwMathException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/MathException");
+}
+
+void throwMatrixException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/matrix/MatrixException");
+}
+
+void throwSolverException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/solver/SolverException");
 }
 
 }  // namespace jni

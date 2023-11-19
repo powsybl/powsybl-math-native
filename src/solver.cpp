@@ -37,7 +37,7 @@ namespace powsybl {
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver_test(JNIEnv * env, jobject) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jobject) {
     try {
         std::cout << "start" << std::endl;
 
