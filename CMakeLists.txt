@@ -116,6 +116,6 @@ target_link_libraries(math
     PUBLIC
     SuiteSparse::KLU_static
     SuiteSparse::CXSparse_static
-    sundials_kinsol
-    sundials_sunlinsolklu
+    sundials_kinsol_static
+    sundials_sunlinsolklu_static
 )
