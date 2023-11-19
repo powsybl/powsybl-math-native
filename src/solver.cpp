@@ -60,16 +60,35 @@ private:
 };
 
 static int eval(N_Vector x, N_Vector f, void* user_data) {
+    std::cout << "eval" << std::endl;
     // TODO
+    // a = x^2 + y^2 - 10
+    // b = xy - 3 = 0
     double* xData = N_VGetArrayPointer(x);
     double* fData = N_VGetArrayPointer(f);
-    fData[0] = xData[0] * xData[0] + xData[1] * xData[1] - 10;
-    fData[1] = xData[0] * xData[1] - 3;
+    double xx = xData[0];
+    double y = xData[1];
+    fData[0] = xx * xx + y * y - 10;
+    fData[1] = xx * y - 3;
     return 0;
 }
 
 static int evalDer(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
     // TODO
+    std::cout << "evalDer" << std::endl;
+    // a: x^2 + y^2 - 10
+    // b: xy - 3 = 0
+    // da/dx = 2x
+    // da/dy = 2y
+    // db/dx = y
+    // db/dy = x
+    double* xData = N_VGetArrayPointer(x);
+    sunindextype* colPtrs = SUNSparseMatrix_IndexPointers(j);
+    sunindextype* rowVals = SUNSparseMatrix_IndexValues(j);
+    double* data = SUNSparseMatrix_Data(j);
+
+    SUNMatZero(j);
+    std::cout << "fin evalDer" << std::endl;
     return 0;
 }
 
@@ -95,10 +114,11 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         // x^2 + y^2 = 10
         // xy - 3 = 0
         int n = 2;
+        int nnz = 4;
         double xData[2] = {0, 0};
         N_Vector x = N_VMake_Serial(n, xData, sunCtx);
 
-        SUNMatrix j = SUNSparseMatrix(n, n, 4, CSC_MAT, sunCtx);
+        SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
 
         SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
         if (!ls) {
