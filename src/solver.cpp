@@ -59,12 +59,16 @@ private:
     powsybl::jni::ComPowsyblMathSolverNewtonKrylovSolverContext _delegate;
 };
 
-static int eval(N_Vector u, N_Vector f, void* user_data) {
+static int eval(N_Vector x, N_Vector f, void* user_data) {
     // TODO
+    double* xData = N_VGetArrayPointer(x);
+    double* fData = N_VGetArrayPointer(f);
+    fData[0] = xData[0] * xData[0] + xData[1] * xData[1] - 10;
+    fData[1] = xData[0] * xData[1] - 3;
     return 0;
 }
 
-static int evalDer(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
+static int evalDer(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
     // TODO
     return 0;
 }
