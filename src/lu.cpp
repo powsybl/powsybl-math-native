@@ -16,21 +16,11 @@
 #include <klu.h>
 #include <cs.h>
 #include "jniwrapper.hpp"
+#include "lu.hpp"
 
 namespace powsybl {
 
 namespace jni {
-
-class ComPowsyblMathMatrixSparseMatrix : public JniWrapper<jobject> {
-public:
-    ComPowsyblMathMatrixSparseMatrix(JNIEnv* env, int m, int n, const IntArray& ap, const IntArray& ai, const DoubleArray& ax);
-
-    static void init(JNIEnv* env);
-
-private:
-    static jclass _cls;
-    static jmethodID _constructor; 
-};
 
 jclass ComPowsyblMathMatrixSparseMatrix::_cls = nullptr;
 jmethodID ComPowsyblMathMatrixSparseMatrix::_constructor = nullptr;

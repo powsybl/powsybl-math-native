@@ -77,6 +77,7 @@ add_library(SUNDIALS::KLU ALIAS KLU_static)
 
 set(SOURCES
     src/jniwrapper.cpp
+    src/native.cpp
     src/lu.cpp
     src/solver.cpp
 )

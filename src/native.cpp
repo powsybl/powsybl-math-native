@@ -8,6 +8,9 @@
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
+#include "jniwrapper.hpp"
+#include "lu.hpp"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
