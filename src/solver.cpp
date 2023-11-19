@@ -8,6 +8,7 @@
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
+#include <iostream>
 #include <kinsol/kinsol.h>
 #include <sundials/sundials_nvector.h>
 #include <sunmatrix/sunmatrix_sparse.h>
@@ -25,6 +26,8 @@ extern "C" {
 
 JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver_test(JNIEnv * env, jobject) {
     try {
+        std::cout << "start" << std::endl;
+
         SUNContext sunctx;
         int error = SUNContext_Create(nullptr, &sunctx);
         if (error != 0) {
