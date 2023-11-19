@@ -6,8 +6,18 @@
  */
 package com.powsybl.math.solver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
 public class NewtonKrylovSolverContext {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NewtonKrylovSolverContext.class);
+
+    public void logError(int errorCode, String module, String function, String message) {
+        LOGGER.error("KinSol error: code={}, module={}, function={}, message={}",
+                errorCode, module, function, message);
+    }
 }
