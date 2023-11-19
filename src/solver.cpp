@@ -132,7 +132,11 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("KINSetUserData error " + std::to_string(error));
         }
 
-        // TODO set max iter, etc
+        int maxIter = 200;
+        error = KINSetNumMaxIters(kinMem, maxIter);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
+        }
 
         bool lineSearch = false;
         double scaleData[2] = {1, 1}; // no scale
