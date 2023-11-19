@@ -17,7 +17,7 @@ public class NewtonKrylovSolverContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewtonKrylovSolverContext.class);
 
     public void logError(int errorCode, String module, String function, String message) {
-        LOGGER.error("KinSol error: code={}, module={}, function={}, message={}",
+        LOGGER.error("KinSol error: code={}, module='{}', function='{}', message='{}'",
                 errorCode, module, function, message);
     }
 }

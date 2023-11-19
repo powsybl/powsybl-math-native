@@ -35,25 +35,43 @@ ComPowsyblMathSolverNewtonKrylovSolverContext::ComPowsyblMathSolverNewtonKrylovS
 }
 
 void ComPowsyblMathSolverNewtonKrylovSolverContext::logError(int errorCode, const std::string& module, const std::string& function, const std::string& message) {
-
+    _env->CallVoidMethod(_obj,
+                         _logError,
+                         errorCode,
+                         _env->NewStringUTF(module.c_str()),
+                         _env->NewStringUTF(function.c_str()),
+                         _env->NewStringUTF(message.c_str()));
 }
 
 }  // namespace jni
 
+class NewtonKrylovSolverContext {
+public:
+    NewtonKrylovSolverContext(JNIEnv* env, jobject jobj)
+        : _delegate(env, jobj) {
+    }
+
+    void logError(int errorCode, const std::string& module, const std::string& function, const std::string& message) {
+        _delegate.logError(errorCode, module, function, message);
+    }
+
+private:
+    powsybl::jni::ComPowsyblMathSolverNewtonKrylovSolverContext _delegate;
+};
+
 static int eval(N_Vector u, N_Vector f, void* user_data) {
-    std::cout << "eval" << std::endl;
     // TODO
     return 0;
 }
 
 static int evalDer(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
-    std::cout << "evalDer" << std::endl;
     // TODO
     return 0;
 }
 
 static void errorHandler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
-    std::cerr << error_code << " " << module << " " << function << " " << msg << std::endl;
+    NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
+    solverContext->logError(error_code, module, function, msg);
 }
 
 }
@@ -62,10 +80,8 @@ static void errorHandler(int error_code, const char* module, const char* functio
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jobject) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jobject jSolverContext) {
     try {
-        std::cout << "start" << std::endl;
-
         SUNContext sunCtx;
         int error = SUNContext_Create(nullptr, &sunCtx);
         if (error != 0) {
@@ -108,6 +124,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, nullptr);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
+        }
+
+        powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext);
+        error = KINSetUserData(kinMem, &solverContext);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSetUserData error " + std::to_string(error));
         }
 
         // TODO set max iter, etc
