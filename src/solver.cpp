@@ -46,13 +46,13 @@ static int eval(N_Vector u, N_Vector f, void* user_data) {
     return 0;
 }
 
-static int eval_der(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
-    std::cout << "eval_der" << std::endl;
+static int evalDer(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
+    std::cout << "evalDer" << std::endl;
     // TODO
     return 0;
 }
 
-static void error_handler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
+static void errorHandler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
     std::cerr << error_code << " " << module << " " << function << " " << msg << std::endl;
 }
 
@@ -66,8 +66,8 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
     try {
         std::cout << "start" << std::endl;
 
-        SUNContext sunctx;
-        int error = SUNContext_Create(nullptr, &sunctx);
+        SUNContext sunCtx;
+        int error = SUNContext_Create(nullptr, &sunCtx);
         if (error != 0) {
             throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
         }
@@ -76,36 +76,36 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         // xy - 3 = 0
         int n = 2;
         double x0_data[2] = {0, 0};
-        N_Vector x0 = N_VMake_Serial(n, x0_data, sunctx);
+        N_Vector x0 = N_VMake_Serial(n, x0_data, sunCtx);
 
-        SUNMatrix j = SUNSparseMatrix(n, n, 4, CSC_MAT, sunctx);
+        SUNMatrix j = SUNSparseMatrix(n, n, 4, CSC_MAT, sunCtx);
 
-        SUNLinearSolver ls = SUNLinSol_KLU(x0, j, sunctx);
+        SUNLinearSolver ls = SUNLinSol_KLU(x0, j, sunCtx);
         if (!ls) {
             throw std::runtime_error("SUNLinSol_KLU error");
         }
 
-        void* kin_mem = KINCreate(sunctx);
-        if (!kin_mem) {
+        void* kinMem = KINCreate(sunCtx);
+        if (!kinMem) {
             throw std::runtime_error("KINCreate error");
         }
 
-        error = KINInit(kin_mem, powsybl::eval, x0);
+        error = KINInit(kinMem, powsybl::eval, x0);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINInit error " + std::to_string(error));
         }
 
-        error = KINSetLinearSolver(kin_mem, ls, j);
+        error = KINSetLinearSolver(kinMem, ls, j);
         if (error != KINLS_SUCCESS) {
             throw std::runtime_error("KINSetLinearSolver error " + std::to_string(error));
         }
 
-        error = KINSetJacFn(kin_mem, powsybl::eval_der);
+        error = KINSetJacFn(kinMem, powsybl::evalDer);
         if (error != KINLS_SUCCESS) {
             throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
         }
 
-        error = KINSetErrHandlerFn(kin_mem, powsybl::error_handler, nullptr);
+        error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, nullptr);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
         }
@@ -113,15 +113,15 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         // TODO set max iter, etc
 
         bool line_search = false;
-        double scale_data[2] = {1, 1}; // no scale
-        N_Vector scale = N_VMake_Serial(n, x0_data, sunctx);
+        double scaleData[2] = {1, 1}; // no scale
+        N_Vector scale = N_VMake_Serial(n, scaleData, sunCtx);
 
-        error = KINSol(kin_mem, x0, line_search ? KIN_LINESEARCH : KIN_NONE, scale, scale);
+        error = KINSol(kinMem, x0, line_search ? KIN_LINESEARCH : KIN_NONE, scale, scale);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSol error " + std::to_string(error));
         }
 
-        KINFree(&kin_mem);
+        KINFree(&kinMem);
 
         error = SUNLinSolFree_KLU(ls);
         if (error != 0) {
@@ -132,7 +132,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
 
         N_VDestroy_Serial(x0);
 
-        error = SUNContext_Free(&sunctx);
+        error = SUNContext_Free(&sunCtx);
         if (error != 0) {
             throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
         }
