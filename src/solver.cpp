@@ -19,11 +19,13 @@
 namespace powsybl {
 
     static int eval(N_Vector u, N_Vector f, void* user_data) {
+        std::cout << "eval" << std::endl;
         // TODO
         return 0;
     }
 
     static int eval_der(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
+        std::cout << "eval_der" << std::endl;
         // TODO
         return 0;
     }
@@ -88,8 +90,9 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         // TODO set max iter, etc
 
         bool line_search = false;
-        N_Vector scale;
-        N_VConst(RCONST(1.0), scale); // no scale
+        double scale_data[2] = {1, 1}; // no scale
+        N_Vector scale = N_VMake_Serial(n, x0_data, sunctx);
+
         error = KINSol(kin_mem, x0, line_search ? KIN_LINESEARCH : KIN_NONE, scale, scale);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSol error " + std::to_string(error));
