@@ -91,12 +91,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         // x^2 + y^2 = 10
         // xy - 3 = 0
         int n = 2;
-        double x0_data[2] = {0, 0};
-        N_Vector x0 = N_VMake_Serial(n, x0_data, sunCtx);
+        double xData[2] = {0, 0};
+        N_Vector x = N_VMake_Serial(n, xData, sunCtx);
 
         SUNMatrix j = SUNSparseMatrix(n, n, 4, CSC_MAT, sunCtx);
 
-        SUNLinearSolver ls = SUNLinSol_KLU(x0, j, sunCtx);
+        SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
         if (!ls) {
             throw std::runtime_error("SUNLinSol_KLU error");
         }
@@ -106,7 +106,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("KINCreate error");
         }
 
-        error = KINInit(kinMem, powsybl::eval, x0);
+        error = KINInit(kinMem, powsybl::eval, x);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINInit error " + std::to_string(error));
         }
@@ -134,11 +134,11 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
 
         // TODO set max iter, etc
 
-        bool line_search = false;
+        bool lineSearch = false;
         double scaleData[2] = {1, 1}; // no scale
         N_Vector scale = N_VMake_Serial(n, scaleData, sunCtx);
 
-        error = KINSol(kinMem, x0, line_search ? KIN_LINESEARCH : KIN_NONE, scale, scale);
+        error = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSol error " + std::to_string(error));
         }
@@ -152,7 +152,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
 
         SUNMatDestroy(j);
 
-        N_VDestroy_Serial(x0);
+        N_VDestroy_Serial(x);
 
         error = SUNContext_Free(&sunCtx);
         if (error != 0) {
