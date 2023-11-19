@@ -8,12 +8,13 @@ cmake_minimum_required(VERSION 3.18.0...3.27.7)
 project(math)
 
 include(GNUInstallDirs)
+include(FetchContent)
 
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 
 # compiler options
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(NOPENMP true)
 
@@ -58,17 +59,34 @@ add_library(SuiteSparse::KLU_static ALIAS KLU_static)
 add_subdirectory(${suitesparse_source}/CXSparse)
 add_library(SuiteSparse::CXSparse_static ALIAS CXSparse_static)
 
+install(TARGETS KLU_static DESTINATION ${THIRD_PARTY_DIR}/myproj)
+
+# sundials build
+set(sundials_version "6.6.2")
+set(ENABLE_CUDA false) # we don't need GPU features
+unset(EXAMPLES_ENABLE_CUDA)
+unset(CMAKE_CUDA_ARCHITECTURES)
+set(BUILD_SUNLINSOL_KLU true)
+FetchContent_Declare(sundials
+    URL "https://github.com/LLNL/sundials/releases/download/v${sundials_version}/sundials-${sundials_version}.tar.gz"
+)
+FetchContent_MakeAvailable(sundials)
+list(APPEND CMAKE_MODULE_PATH ${sundials_SOURCE_DIR}/cmake)
+# this is kind of hack to avoid SunDials build system to detect its own installed KLU
+add_library(SUNDIALS::KLU ALIAS KLU_static)
+
 set(SOURCES
-    src/lu.cpp
     src/jniwrapper.cpp
+    src/lu.cpp
+    src/solver.cpp
 )
 add_library(math SHARED ${SOURCES})
-
-add_dependencies(math KLU_static CXSparse_static)
 
 target_include_directories(math
     PUBLIC
     ${JNI_INCLUDE_DIRS}
+    ${sundials_SOURCE_DIR}/include
+    ${sundials_BINARY_DIR}/include
 )
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
@@ -95,7 +113,9 @@ set_target_properties(math PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${MATH_OUTP
 set_target_properties(math PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${MATH_OUTPUT_DIRECTORY})
 
 target_link_libraries(math
-        PUBLIC
-        SuiteSparse::KLU_static
-        SuiteSparse::CXSparse_static
+    PUBLIC
+    SuiteSparse::KLU_static
+    SuiteSparse::CXSparse_static
+    sundials_kinsol
+    sundials_sunlinsolklu
 )
