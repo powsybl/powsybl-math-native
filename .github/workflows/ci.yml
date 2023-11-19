@@ -14,7 +14,7 @@ jobs:
             name: linux,
             os: ubuntu-20.04,
             container: 'ubuntu:18.04',
-            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8 -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -std=c++1y"',
+            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-5 -DCMAKE_C_COMPILER=/usr/bin/gcc-5',
             artifact_name: libmath.so,
             artifact_path: linux_64
           }
@@ -37,7 +37,7 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           apt update
-          apt-get install -y g++-4.8 gcc-4.8 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget git maven
+          apt-get install -y g++-5 gcc-5 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget git maven
           wget https://apt.kitware.com/keys/kitware-archive-latest.asc
           apt-key add kitware-archive-latest.asc
           apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
@@ -59,7 +59,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release --verbose
+        run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release
 
       - name: Test
         shell: bash
