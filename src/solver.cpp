@@ -18,8 +18,18 @@
 
 namespace powsybl {
 
-    static int eval(N_Vector x, N_Vector values, void* user_data) {
+    static int eval(N_Vector u, N_Vector f, void* user_data) {
+        // TODO
         return 0;
+    }
+
+    static int eval_der(N_Vector u, N_Vector fu, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
+        // TODO
+        return 0;
+    }
+
+    static void error_handler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
+        std::cerr << error_code << " " << module << " " << function << " " << msg << std::endl;
     }
 }
 
@@ -60,7 +70,30 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver_test(JNIEnv * e
             throw std::runtime_error("KINInit error " + std::to_string(error));
         }
 
-        // TODO
+        error = KINSetLinearSolver(kin_mem, ls, j);
+        if (error != KINLS_SUCCESS) {
+            throw std::runtime_error("KINSetLinearSolver error " + std::to_string(error));
+        }
+
+        error = KINSetJacFn(kin_mem, powsybl::eval_der);
+        if (error != KINLS_SUCCESS) {
+            throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
+        }
+
+        error = KINSetErrHandlerFn(kin_mem, powsybl::error_handler, nullptr);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
+        }
+
+        // TODO set max iter, etc
+
+        bool line_search = false;
+        N_Vector scale;
+        N_VConst(RCONST(1.0), scale); // no scale
+        error = KINSol(kin_mem, x0, line_search ? KIN_LINESEARCH : KIN_NONE, scale, scale);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSol error " + std::to_string(error));
+        }
 
         KINFree(&kin_mem);
 
@@ -75,7 +108,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_KinsolSolver_test(JNIEnv * e
 
         error = SUNContext_Free(&sunctx);
         if (error != 0) {
-            throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
+            throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
         }
     } catch (const std::exception& e) {
         powsybl::jni::throwMatrixException(env, e.what());
