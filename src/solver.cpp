@@ -82,12 +82,29 @@ static int evalDer(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vecto
     // da/dy = 2y
     // db/dx = y
     // db/dy = x
+    //
+    // 2x  2y
+    // y   x
+    //
     double* xData = N_VGetArrayPointer(x);
     sunindextype* colPtrs = SUNSparseMatrix_IndexPointers(j);
     sunindextype* rowVals = SUNSparseMatrix_IndexValues(j);
     double* data = SUNSparseMatrix_Data(j);
-
     SUNMatZero(j);
+
+    colPtrs[0] = 0;
+    colPtrs[1] = 2;
+    double xx = xData[0];
+    double y = xData[1];
+    data[0] = 2 * xx;
+    data[1] = y;
+    data[2] = 2 * y;
+    data[3] = xx;
+    rowVals[0] = 0;
+    rowVals[1] = 1;
+    rowVals[2] = 0;
+    rowVals[3] = 1;
+
     std::cout << "fin evalDer" << std::endl;
     return 0;
 }
@@ -145,12 +162,13 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
         }
 
-        error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, nullptr);
+        powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext);
+
+        error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, &solverContext);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
         }
 
-        powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext);
         error = KINSetUserData(kinMem, &solverContext);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSetUserData error " + std::to_string(error));
