@@ -32,8 +32,6 @@ FetchContent_Declare(SuiteSparse
 FetchContent_Populate(SuiteSparse)
 add_subdirectory(${suitesparse_SOURCE_DIR} ${suitesparse_BINARY_DIR} EXCLUDE_FROM_ALL)
 
-install(TARGETS KLU_static DESTINATION ${THIRD_PARTY_DIR}/myproj)
-
 # sundials build
 set(sundials_version "6.6.2")
 set(ENABLE_CUDA false) # we don't need GPU features
