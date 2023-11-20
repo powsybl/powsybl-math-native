@@ -38,10 +38,13 @@ set(ENABLE_CUDA false) # we don't need GPU features
 unset(EXAMPLES_ENABLE_CUDA)
 unset(CMAKE_CUDA_ARCHITECTURES)
 set(BUILD_SUNLINSOL_KLU true)
+set(BUILD_SHARED_LIBS OFF)
 FetchContent_Declare(sundials
     URL "https://github.com/LLNL/sundials/releases/download/v${sundials_version}/sundials-${sundials_version}.tar.gz"
 )
-FetchContent_MakeAvailable(sundials)
+FetchContent_Populate(sundials)
+add_subdirectory(${sundials_SOURCE_DIR} ${sundials_BINARY_DIR} EXCLUDE_FROM_ALL)
+
 list(APPEND CMAKE_MODULE_PATH ${sundials_SOURCE_DIR}/cmake)
 # this is kind of hack to avoid SunDials build system to detect its own installed KLU
 add_library(SUNDIALS::KLU ALIAS KLU_static)
