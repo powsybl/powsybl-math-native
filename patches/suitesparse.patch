@@ -1,0 +1,53 @@
+diff -ruN SuiteSparse-7.3.1/CMakeLists.txt SuiteSparse-7.3.1.patched/CMakeLists.txt
+--- SuiteSparse-7.3.1/CMakeLists.txt	1970-01-01 01:00:00.000000000 +0100
++++ SuiteSparse-7.3.1.patched/CMakeLists.txt	2023-11-20 10:35:03.770174365 +0100
+@@ -0,0 +1,33 @@
++cmake_minimum_required(VERSION 3.20)
++project(SparseSuite)
++
++list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/SuiteSparse_config/cmake_modules")
++
++# avoid blas check as it is hard to compile on windows
++# and that we don't need it for the suitesparse modules we need (amd, colamd, btf, klu and cxsparse)
++set ( SuiteSparse_BLAS_integer "int32_t" )
++set ( BLAS_FOUND true )
++
++add_subdirectory(SuiteSparse_config/)
++add_library(SuiteSparse::SuiteSparseConfig ALIAS SuiteSparseConfig)
++add_library(SuiteSparse::SuiteSparseConfig_static ALIAS SuiteSparseConfig_static)
++
++add_subdirectory(AMD)
++add_library(SuiteSparse::AMD ALIAS AMD)
++add_library(SuiteSparse::AMD_static ALIAS AMD_static)
++
++add_subdirectory(COLAMD)
++add_library(SuiteSparse::COLAMD ALIAS COLAMD)
++add_library(SuiteSparse::COLAMD_static ALIAS COLAMD_static)
++
++add_subdirectory(BTF)
++add_library(SuiteSparse::BTF ALIAS BTF)
++add_library(SuiteSparse::BTF_static ALIAS BTF_static)
++
++add_subdirectory(KLU)
++add_library(SuiteSparse::KLU ALIAS KLU)
++add_library(SuiteSparse::KLU_static ALIAS KLU_static)
++
++add_subdirectory(CXSparse)
++add_library(SuiteSparse::CXSparse ALIAS CXSparse)
++add_library(SuiteSparse::CXSparse_static ALIAS CXSparse_static)
+\ Pas de fin de ligne à la fin du fichier
+diff -ruN SuiteSparse-7.3.1/SuiteSparse_config/CMakeLists.txt SuiteSparse-7.3.1.patched/SuiteSparse_config/CMakeLists.txt
+--- SuiteSparse-7.3.1/SuiteSparse_config/CMakeLists.txt	2023-11-03 23:42:14.000000000 +0100
++++ SuiteSparse-7.3.1.patched/SuiteSparse_config/CMakeLists.txt	2023-11-20 10:47:59.326178237 +0100
+@@ -62,7 +62,10 @@
+     find_package ( OpenMP )
+ endif ( )
+ 
+-include ( SuiteSparseBLAS )
++## patch CMakeLists.txt of SuiteSparse_config module to avoid blas check as it is hard to compile on windows
++## and that we don't need it for the suitesparse modules we need (amd, colamd, btf, klu and cxsparse)
++set ( SuiteSparse_BLAS_integer "int32_t" )
++set ( BLAS_FOUND true )
+ 
+ #-------------------------------------------------------------------------------
+ # configure files
