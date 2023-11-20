@@ -23,11 +23,13 @@ namespace jni {
 
 jclass ComPowsyblMathSolverNewtonKrylovSolverContext::_cls = nullptr;
 jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_logError = nullptr;
+jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_logInfo = nullptr;
 
 void ComPowsyblMathSolverNewtonKrylovSolverContext::init(JNIEnv* env) {
     jclass localCls = env->FindClass("com/powsybl/math/solver/NewtonKrylovSolverContext");
     _cls = reinterpret_cast<jclass>(env->NewGlobalRef(localCls));
     _logError = env->GetMethodID(_cls, "logError", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+    _logInfo = env->GetMethodID(_cls, "logInfo", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 }
 
 ComPowsyblMathSolverNewtonKrylovSolverContext::ComPowsyblMathSolverNewtonKrylovSolverContext(JNIEnv* env, jobject obj)
@@ -38,6 +40,14 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::logError(int errorCode, cons
     _env->CallVoidMethod(_obj,
                          _logError,
                          errorCode,
+                         _env->NewStringUTF(module.c_str()),
+                         _env->NewStringUTF(function.c_str()),
+                         _env->NewStringUTF(message.c_str()));
+}
+
+void ComPowsyblMathSolverNewtonKrylovSolverContext::logInfo(const std::string& module, const std::string& function, const std::string& message) {
+    _env->CallVoidMethod(_obj,
+                         _logInfo,
                          _env->NewStringUTF(module.c_str()),
                          _env->NewStringUTF(function.c_str()),
                          _env->NewStringUTF(message.c_str()));
@@ -55,11 +65,15 @@ public:
         _delegate.logError(errorCode, module, function, message);
     }
 
+    void logInfo(const std::string& module, const std::string& function, const std::string& message) {
+        _delegate.logInfo(module, function, message);
+    }
+
 private:
     powsybl::jni::ComPowsyblMathSolverNewtonKrylovSolverContext _delegate;
 };
 
-static int eval(N_Vector x, N_Vector f, void* user_data) {
+static int evalF(N_Vector x, N_Vector f, void* user_data) {
     std::cout << "eval" << std::endl;
     // TODO
     // a = x^2 + y^2 - 10
@@ -70,10 +84,11 @@ static int eval(N_Vector x, N_Vector f, void* user_data) {
     double y = xData[1];
     fData[0] = xx * xx + y * y - 10;
     fData[1] = xx * y - 3;
+    N_VPrint_Serial(x);
     return 0;
 }
 
-static int evalDer(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
+static int evalJ(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
     // TODO
     std::cout << "evalDer" << std::endl;
     // a: x^2 + y^2 - 10
@@ -90,6 +105,7 @@ static int evalDer(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vecto
     sunindextype* colPtrs = SUNSparseMatrix_IndexPointers(j);
     sunindextype* rowVals = SUNSparseMatrix_IndexValues(j);
     double* data = SUNSparseMatrix_Data(j);
+
     SUNMatZero(j);
 
     colPtrs[0] = 0;
@@ -105,13 +121,18 @@ static int evalDer(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vecto
     rowVals[2] = 0;
     rowVals[3] = 1;
 
-    std::cout << "fin evalDer" << std::endl;
+    SUNSparseMatrix_Print(j, stdout);
     return 0;
 }
 
 static void errorHandler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
     NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
     solverContext->logError(error_code, module, function, msg);
+}
+
+static void infoHandler(const char* module, const char* function, char* msg, void* user_data) {
+    NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
+    solverContext->logInfo(module, function, msg);
 }
 
 }
@@ -132,7 +153,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         // xy - 3 = 0
         int n = 2;
         int nnz = 4;
-        double xData[2] = {0, 0};
+        double xData[2] = {1, 1};
         N_Vector x = N_VMake_Serial(n, xData, sunCtx);
 
         SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
@@ -147,7 +168,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("KINCreate error");
         }
 
-        error = KINInit(kinMem, powsybl::eval, x);
+        error = KINInit(kinMem, powsybl::evalF, x);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINInit error " + std::to_string(error));
         }
@@ -157,7 +178,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("KINSetLinearSolver error " + std::to_string(error));
         }
 
-        error = KINSetJacFn(kinMem, powsybl::evalDer);
+        error = KINSetJacFn(kinMem, powsybl::evalJ);
         if (error != KINLS_SUCCESS) {
             throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
         }
@@ -169,6 +190,17 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
         }
 
+        error = KINSetInfoHandlerFn(kinMem, powsybl::infoHandler, &solverContext);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSetInfoHandlerFn error " + std::to_string(error));
+        }
+
+        int level = 2;
+        error = KINSetPrintLevel(kinMem, level);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSetPrintLevel error " + std::to_string(error));
+        }
+
         error = KINSetUserData(kinMem, &solverContext);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSetUserData error " + std::to_string(error));
@@ -178,6 +210,11 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         error = KINSetNumMaxIters(kinMem, maxIter);
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
+        }
+
+        error = KINSetMaxSetupCalls(kinMem, 1);
+        if (error != KIN_SUCCESS) {
+            throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
         }
 
         bool lineSearch = false;

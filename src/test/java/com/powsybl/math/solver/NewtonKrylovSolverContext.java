@@ -6,6 +6,7 @@
  */
 package com.powsybl.math.solver;
 
+import com.powsybl.math.matrix.SparseMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,5 +20,22 @@ public class NewtonKrylovSolverContext {
     public void logError(int errorCode, String module, String function, String message) {
         LOGGER.error("KinSol error: code={}, module='{}', function='{}', message='{}'",
                 errorCode, module, function, message);
+    }
+
+    public void logInfo(String module, String function, String message) {
+        LOGGER.info("KinSol info: module='{}', function='{}', message='{}'",
+                module, function, message);
+    }
+
+    public void updateX(double[] x) {
+
+    }
+
+    public double[] evalF() {
+        return null;
+    }
+
+    public SparseMatrix evalJ() {
+        return null;
     }
 }

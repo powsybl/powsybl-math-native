@@ -20,9 +20,12 @@ public:
 
     void logError(int errorCode, const std::string& module, const std::string& function, const std::string& message);
 
+    void logInfo(const std::string& module, const std::string& function, const std::string& message);
+
 private:
     static jclass _cls;
     static jmethodID _logError;
+    static jmethodID _logInfo;
 };
 
 }  // namespace jni
