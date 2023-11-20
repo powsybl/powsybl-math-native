@@ -28,7 +28,8 @@ FetchContent_Declare(SuiteSparse
   URL_HASH ${suitesparse_url_has}
   PATCH_COMMAND git apply --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_SOURCE_DIR}/patches/suitesparse.patch)
 
-FetchContent_MakeAvailable(SuiteSparse)
+FetchContent_Populate(SuiteSparse)
+add_subdirectory(${suitesparse_SOURCE_DIR} ${suitesparse_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 set(SOURCES
     src/lu.cpp
