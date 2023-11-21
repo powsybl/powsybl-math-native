@@ -9,7 +9,6 @@ package com.powsybl.mathnative;
 import com.powsybl.math.matrix.SparseMatrix;
 import com.powsybl.math.solver.NewtonKrylovSolver;
 import com.powsybl.math.solver.NewtonKrylovSolverContext;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.Test;
  */
 class SolverTest {
 
-    @Disabled
     @Test
     void test() {
         SparseMatrix m = new SparseMatrix(0, 0, new int[] {}, new int[] {}, new double[] {});
