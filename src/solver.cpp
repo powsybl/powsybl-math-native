@@ -129,6 +129,99 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
     solverContext->logInfo(module, function, msg);
 }
 
+void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverContext, int maxIter, bool lineSearch, int level) {
+    SUNContext sunCtx;
+    int error = SUNContext_Create(nullptr, &sunCtx);
+    if (error != 0) {
+        throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
+    }
+
+    int nnz = 4;
+    N_Vector x = N_VMake_Serial(n, xData, sunCtx);
+
+    SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
+
+    SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
+    if (!ls) {
+        throw std::runtime_error("SUNLinSol_KLU error");
+    }
+
+    void* kinMem = KINCreate(sunCtx);
+    if (!kinMem) {
+        throw std::runtime_error("KINCreate error");
+    }
+
+    error = KINInit(kinMem, powsybl::evalF, x);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINInit error " + std::to_string(error));
+    }
+
+    error = KINSetLinearSolver(kinMem, ls, j);
+    if (error != KINLS_SUCCESS) {
+        throw std::runtime_error("KINSetLinearSolver error " + std::to_string(error));
+    }
+
+    error = KINSetJacFn(kinMem, powsybl::evalJ);
+    if (error != KINLS_SUCCESS) {
+        throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
+    }
+
+    error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, &solverContext);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
+    }
+
+    error = KINSetInfoHandlerFn(kinMem, powsybl::infoHandler, &solverContext);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetInfoHandlerFn error " + std::to_string(error));
+    }
+
+    int level = 2;
+    error = KINSetPrintLevel(kinMem, level);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetPrintLevel error " + std::to_string(error));
+    }
+
+    error = KINSetUserData(kinMem, &solverContext);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetUserData error " + std::to_string(error));
+    }
+
+    error = KINSetNumMaxIters(kinMem, maxIter);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
+    }
+
+    error = KINSetMaxSetupCalls(kinMem, 1);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
+    }
+
+    double scaleData[2] = {1, 1}; // no scale
+    N_Vector scale = N_VMake_Serial(n, scaleData, sunCtx);
+
+    error = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSol error " + std::to_string(error));
+    }
+
+    KINFree(&kinMem);
+
+    error = SUNLinSolFree_KLU(ls);
+    if (error != 0) {
+        throw std::runtime_error("SUNLinSolFree_KLU error " + std::to_string(error));
+    }
+
+    SUNMatDestroy(j);
+
+    N_VDestroy_Serial(x);
+
+    error = SUNContext_Free(&sunCtx);
+    if (error != 0) {
+        throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
+    }
+}
+
 }
 
 #ifdef __cplusplus
@@ -138,102 +231,12 @@ extern "C" {
 JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jdoubleArray j_x, jobject jSolverContext) {
     try {
         powsybl::jni::DoubleArray xData(env, j_x);
-
-        SUNContext sunCtx;
-        int error = SUNContext_Create(nullptr, &sunCtx);
-        if (error != 0) {
-            throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
-        }
-
         int n = xData.length();
-        int nnz = 4;
-        N_Vector x = N_VMake_Serial(n, xData.get(), sunCtx);
-
-        SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
-
-        SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
-        if (!ls) {
-            throw std::runtime_error("SUNLinSol_KLU error");
-        }
-
-        void* kinMem = KINCreate(sunCtx);
-        if (!kinMem) {
-            throw std::runtime_error("KINCreate error");
-        }
-
-        error = KINInit(kinMem, powsybl::evalF, x);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINInit error " + std::to_string(error));
-        }
-
-        error = KINSetLinearSolver(kinMem, ls, j);
-        if (error != KINLS_SUCCESS) {
-            throw std::runtime_error("KINSetLinearSolver error " + std::to_string(error));
-        }
-
-        error = KINSetJacFn(kinMem, powsybl::evalJ);
-        if (error != KINLS_SUCCESS) {
-            throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
-        }
-
         powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext);
-
-        error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, &solverContext);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
-        }
-
-        error = KINSetInfoHandlerFn(kinMem, powsybl::infoHandler, &solverContext);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSetInfoHandlerFn error " + std::to_string(error));
-        }
-
-        int level = 2;
-        error = KINSetPrintLevel(kinMem, level);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSetPrintLevel error " + std::to_string(error));
-        }
-
-        error = KINSetUserData(kinMem, &solverContext);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSetUserData error " + std::to_string(error));
-        }
-
         int maxIter = 200;
-        error = KINSetNumMaxIters(kinMem, maxIter);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
-        }
-
-        error = KINSetMaxSetupCalls(kinMem, 1);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
-        }
-
         bool lineSearch = false;
-        double scaleData[2] = {1, 1}; // no scale
-        N_Vector scale = N_VMake_Serial(n, scaleData, sunCtx);
-
-        error = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
-        if (error != KIN_SUCCESS) {
-            throw std::runtime_error("KINSol error " + std::to_string(error));
-        }
-
-        KINFree(&kinMem);
-
-        error = SUNLinSolFree_KLU(ls);
-        if (error != 0) {
-            throw std::runtime_error("SUNLinSolFree_KLU error " + std::to_string(error));
-        }
-
-        SUNMatDestroy(j);
-
-        N_VDestroy_Serial(x);
-
-        error = SUNContext_Free(&sunCtx);
-        if (error != 0) {
-            throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
-        }
+        int level = 2;
+        powsybl::solve(n, xData.get(), solverContext, maxIter, lineSearch, level);
     } catch (const std::exception& e) {
         powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
