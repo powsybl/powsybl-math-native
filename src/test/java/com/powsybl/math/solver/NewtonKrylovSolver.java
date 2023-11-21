@@ -17,5 +17,5 @@ public class NewtonKrylovSolver {
         MathNative.init();
     }
 
-    public native void solve(NewtonKrylovSolverContext context);
+    public native void solve(double[] x, NewtonKrylovSolverContext context);
 }

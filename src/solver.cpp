@@ -135,18 +135,19 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jobject jSolverContext) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jdoubleArray j_x, jobject jSolverContext) {
     try {
+        powsybl::jni::DoubleArray xData(env, j_x);
+
         SUNContext sunCtx;
         int error = SUNContext_Create(nullptr, &sunCtx);
         if (error != 0) {
             throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
         }
 
-        int n = 2;
+        int n = xData.length();
         int nnz = 4;
-        double xData[2] = {1, 0};
-        N_Vector x = N_VMake_Serial(n, xData, sunCtx);
+        N_Vector x = N_VMake_Serial(n, xData.get(), sunCtx);
 
         SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
 
@@ -217,8 +218,6 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSol error " + std::to_string(error));
         }
-
-        N_VPrint_Serial(x);
 
         KINFree(&kinMem);
 

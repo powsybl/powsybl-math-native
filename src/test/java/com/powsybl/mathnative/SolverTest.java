@@ -6,10 +6,11 @@
  */
 package com.powsybl.mathnative;
 
-import com.powsybl.math.matrix.SparseMatrix;
 import com.powsybl.math.solver.NewtonKrylovSolver;
 import com.powsybl.math.solver.NewtonKrylovSolverContext;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
@@ -18,8 +19,9 @@ class SolverTest {
 
     @Test
     void test() {
-        SparseMatrix m = new SparseMatrix(0, 0, new int[] {}, new int[] {}, new double[] {});
+        double[] x = new double[] {1, 0}; // initial guess
         NewtonKrylovSolver solver = new NewtonKrylovSolver();
-        solver.solve(new NewtonKrylovSolverContext());
+        solver.solve(x, new NewtonKrylovSolverContext());
+        assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);
     }
 }
