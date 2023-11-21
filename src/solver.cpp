@@ -112,7 +112,7 @@ static int evalJ(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector 
     std::cout << dq2dv2 << std::endl;
     std::cout << dq2dph2 << std::endl;
 
-    SUNMatZero(j);
+  //  SUNMatZero(j);
 
     colPtrs[0] = 0;
     colPtrs[1] = 2;
@@ -152,12 +152,10 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         if (error != 0) {
             throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
         }
-        // to solve
-        // x^2 + y^2 = 10
-        // xy - 3 = 0
+
         int n = 2;
         int nnz = 4;
-        double xData[2] = {1, 1};
+        double xData[2] = {1, 0};
         N_Vector x = N_VMake_Serial(n, xData, sunCtx);
 
         SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
