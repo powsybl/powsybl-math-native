@@ -74,7 +74,6 @@ private:
 };
 
 static int evalF(N_Vector x, N_Vector f, void* user_data) {
-    std::cout << "eval" << std::endl;
     // 0 = 0.02 + v2 * 0.1 * sin(ph2)
     // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
     // solution: (0.855373, -0.236001)
@@ -84,14 +83,10 @@ static int evalF(N_Vector x, N_Vector f, void* user_data) {
     double ph2 = xData[1];
     fData[0] = 0.02 + v2 * 0.1 * std::sin(ph2);
     fData[1] = 0.01 + v2 * 0.1 * (-std::cos(ph2) + v2);
-    N_VPrint_Serial(x);
     return 0;
 }
 
 static int evalJ(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
-    // TODO
-    std::cout << "evalDer" << std::endl;
-
     double* xData = N_VGetArrayPointer(x);
     double v2 = xData[0];
     double ph2 = xData[1];
@@ -107,15 +102,11 @@ static int evalJ(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector 
     double dq2dv2 = - 0.1 * cos(ph2) + 2 * v2 * 0.1;
     double dq2dph2 = v2 * 0.1 * std::sin(ph2);
 
-    std::cout << dp2dv2 << std::endl;
-    std::cout << dp2dph2 << std::endl;
-    std::cout << dq2dv2 << std::endl;
-    std::cout << dq2dph2 << std::endl;
-
-  //  SUNMatZero(j);
+    SUNMatZero(j);
 
     colPtrs[0] = 0;
     colPtrs[1] = 2;
+    colPtrs[2] = 4;
     data[0] = dp2dv2;
     data[1] = dp2dph2;
     data[2] = dq2dv2;
@@ -125,7 +116,6 @@ static int evalJ(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector 
     rowVals[2] = 0;
     rowVals[3] = 1;
 
-    SUNSparseMatrix_Print(j, stdout);
     return 0;
 }
 
@@ -227,6 +217,8 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         if (error != KIN_SUCCESS) {
             throw std::runtime_error("KINSol error " + std::to_string(error));
         }
+
+        N_VPrint_Serial(x);
 
         KINFree(&kinMem);
 
