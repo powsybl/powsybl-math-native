@@ -39,6 +39,7 @@ unset(EXAMPLES_ENABLE_CUDA)
 unset(CMAKE_CUDA_ARCHITECTURES)
 set(BUILD_SUNLINSOL_KLU true)
 set(BUILD_SHARED_LIBS OFF)
+set(SUNDIALS_INDEX_SIZE 32)
 FetchContent_Declare(sundials
     URL "https://github.com/LLNL/sundials/releases/download/v${sundials_version}/sundials-${sundials_version}.tar.gz"
 )

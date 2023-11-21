@@ -129,7 +129,28 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
     solverContext->logInfo(module, function, msg);
 }
 
-void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverContext, int maxIter, bool lineSearch, int level) {
+SUNMatrix createSparseMatrix(int n, int nnz, int* ap, int* ai, double* ax, SUNContext& sunCtx) {
+    SUNMatrix m = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
+    // TODO could be optimized by full re-implementing SUNSparseMatrix so that we don't need to free this arrays
+    free(SM_INDEXPTRS_S(m));
+    free(SM_INDEXVALS_S(m));
+    free(SM_DATA_S(m));
+    SM_INDEXPTRS_S(m) = ap;
+    SM_INDEXVALS_S(m) = ai;
+    SM_DATA_S(m) = ax;
+    return m;
+}
+
+void destroySparseMatrix(SUNMatrix& m) {
+    // destruction of CSC internal structure is done of Java side
+    SM_INDEXPTRS_S(m) = nullptr;
+    SM_INDEXVALS_S(m) = nullptr;
+    SM_DATA_S(m) = nullptr;
+    SUNMatDestroy(m);
+}
+
+void solve(int n, double* xData, int nnz, int* ap, int* ai, double* ax, powsybl::NewtonKrylovSolverContext& solverContext,
+           int maxIter, bool lineSearch, int level) {
     SUNContext sunCtx;
     int error = SUNContext_Create(nullptr, &sunCtx);
     if (error != 0) {
@@ -138,8 +159,7 @@ void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverConte
 
     N_Vector x = N_VMake_Serial(n, xData, sunCtx);
 
-    int nnz = 4;
-    SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
+    SUNMatrix j = createSparseMatrix(n, nnz, ap, ai, ax, sunCtx);
 
     SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
     if (!ls) {
@@ -211,7 +231,7 @@ void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverConte
         throw std::runtime_error("SUNLinSolFree_KLU error " + std::to_string(error));
     }
 
-    SUNMatDestroy(j);
+    destroySparseMatrix(j);
 
     N_VDestroy_Serial(x);
 
@@ -227,15 +247,20 @@ void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverConte
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jdoubleArray j_x, jobject jSolverContext) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jdoubleArray j_x,
+                                                                             jintArray j_ap, jintArray j_ai, jdoubleArray j_ax, jobject jSolverContext) {
     try {
-        powsybl::jni::DoubleArray xData(env, j_x);
-        int n = xData.length();
+        powsybl::jni::DoubleArray x(env, j_x);
+        int n = x.length();
+        powsybl::jni::IntArray ap(env, j_ap);
+        powsybl::jni::IntArray ai(env, j_ai);
+        powsybl::jni::DoubleArray ax(env, j_ax);
+        int nnz = ax.length();
         powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext);
         int maxIter = 200;
         bool lineSearch = false;
         int level = 2;
-        powsybl::solve(n, xData.get(), solverContext, maxIter, lineSearch, level);
+        powsybl::solve(n, x.get(), nnz, ap.get(), ai.get(), ax.get(), solverContext, maxIter, lineSearch, level);
     } catch (const std::exception& e) {
         powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {

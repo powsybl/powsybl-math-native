@@ -20,8 +20,13 @@ class SolverTest {
     @Test
     void test() {
         double[] x = new double[] {1, 0}; // initial guess
+        int n = 2;
+        int nnz = 4;
+        int[] ap = new int[n + 1];
+        int[] ai = new int[nnz];
+        double[] ax = new double[nnz];
         NewtonKrylovSolver solver = new NewtonKrylovSolver();
-        solver.solve(x, new NewtonKrylovSolverContext());
+        solver.solve(x, ap, ai, ax, new NewtonKrylovSolverContext());
         assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);
     }
 }
