@@ -77,6 +77,7 @@ static int evalF(N_Vector x, N_Vector f, void* user_data) {
     std::cout << "eval" << std::endl;
     // 0 = 0.02 + v2 * 0.1 * sin(ph2)
     // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
+    // solution: (0.855373, -0.236001)
     double* xData = N_VGetArrayPointer(x);
     double* fData = N_VGetArrayPointer(f);
     double v2 = xData[0];
