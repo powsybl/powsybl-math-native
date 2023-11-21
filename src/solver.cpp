@@ -136,9 +136,9 @@ void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverConte
         throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
     }
 
-    int nnz = 4;
     N_Vector x = N_VMake_Serial(n, xData, sunCtx);
 
+    int nnz = 4;
     SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
 
     SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
@@ -176,7 +176,6 @@ void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverConte
         throw std::runtime_error("KINSetInfoHandlerFn error " + std::to_string(error));
     }
 
-    int level = 2;
     error = KINSetPrintLevel(kinMem, level);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetPrintLevel error " + std::to_string(error));
@@ -197,8 +196,8 @@ void solve(int n, double* xData, powsybl::NewtonKrylovSolverContext& solverConte
         throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
     }
 
-    double scaleData[2] = {1, 1}; // no scale
-    N_Vector scale = N_VMake_Serial(n, scaleData, sunCtx);
+    N_Vector scale = N_VNew_Serial(n, sunCtx);
+    N_VConst(1, scale); // no scale
 
     error = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
     if (error != KIN_SUCCESS) {
