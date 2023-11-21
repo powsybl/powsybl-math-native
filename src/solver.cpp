@@ -75,15 +75,14 @@ private:
 
 static int evalF(N_Vector x, N_Vector f, void* user_data) {
     std::cout << "eval" << std::endl;
-    // TODO
-    // a = x^2 + y^2 - 10
-    // b = xy - 3 = 0
+    // 0 = 0.02 + v2 * 0.1 * sin(ph2)
+    // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
     double* xData = N_VGetArrayPointer(x);
     double* fData = N_VGetArrayPointer(f);
-    double xx = xData[0];
-    double y = xData[1];
-    fData[0] = xx * xx + y * y - 10;
-    fData[1] = xx * y - 3;
+    double v2 = xData[0];
+    double ph2 = xData[1];
+    fData[0] = 0.02 + v2 * 0.1 * std::sin(ph2);
+    fData[1] = 0.01 + v2 * 0.1 * (-std::cos(ph2) + v2);
     N_VPrint_Serial(x);
     return 0;
 }
@@ -91,31 +90,35 @@ static int evalF(N_Vector x, N_Vector f, void* user_data) {
 static int evalJ(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
     // TODO
     std::cout << "evalDer" << std::endl;
-    // a: x^2 + y^2 - 10
-    // b: xy - 3 = 0
-    // da/dx = 2x
-    // da/dy = 2y
-    // db/dx = y
-    // db/dy = x
-    //
-    // 2x  2y
-    // y   x
-    //
+
     double* xData = N_VGetArrayPointer(x);
+    double v2 = xData[0];
+    double ph2 = xData[1];
+
     sunindextype* colPtrs = SUNSparseMatrix_IndexPointers(j);
     sunindextype* rowVals = SUNSparseMatrix_IndexValues(j);
     double* data = SUNSparseMatrix_Data(j);
+
+    // p2: 0 = 0.02 + v2 * 0.1 * sin(ph2)
+    // q2: 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
+    double dp2dv2 = 0.1 * std::sin(ph2);
+    double dp2dph2 = v2 * 0.1 * std::cos(ph2);
+    double dq2dv2 = - 0.1 * cos(ph2) + 2 * v2 * 0.1;
+    double dq2dph2 = v2 * 0.1 * std::sin(ph2);
+
+    std::cout << dp2dv2 << std::endl;
+    std::cout << dp2dph2 << std::endl;
+    std::cout << dq2dv2 << std::endl;
+    std::cout << dq2dph2 << std::endl;
 
     SUNMatZero(j);
 
     colPtrs[0] = 0;
     colPtrs[1] = 2;
-    double xx = xData[0];
-    double y = xData[1];
-    data[0] = 2 * xx;
-    data[1] = y;
-    data[2] = 2 * y;
-    data[3] = xx;
+    data[0] = dp2dv2;
+    data[1] = dp2dph2;
+    data[2] = dq2dv2;
+    data[3] = dq2dph2;
     rowVals[0] = 0;
     rowVals[1] = 1;
     rowVals[2] = 0;
