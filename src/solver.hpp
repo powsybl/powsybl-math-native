@@ -22,10 +22,16 @@ public:
 
     void logInfo(const std::string& module, const std::string& function, const std::string& message);
 
+    void updateFunc(double* f, int length);
+
+    void updateJac();
+
 private:
     static jclass _cls;
     static jmethodID _logError;
     static jmethodID _logInfo;
+    static jmethodID _updateFunc;
+    static jmethodID _updateJac;
 };
 
 }  // namespace jni

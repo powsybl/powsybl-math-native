@@ -38,7 +38,7 @@ public class NewtonKrylovSolverContext {
                 module, function, message);
     }
 
-    public void updateF(double[] f) {
+    public void updateFunc(double[] f) {
         // 0 = 0.02 + v2 * 0.1 * sin(ph2)
         // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
         // solution: (0.855373, -0.236001)
@@ -48,7 +48,7 @@ public class NewtonKrylovSolverContext {
         f[1] = 0.01 + v2 * 0.1 * (-Math.cos(ph2) + v2);
     }
 
-    public void updateJ() {
+    public void updateJac() {
         double v2 = x[0];
         double ph2 = x[1];
         double dp2dv2 = 0.1 * Math.sin(ph2);
