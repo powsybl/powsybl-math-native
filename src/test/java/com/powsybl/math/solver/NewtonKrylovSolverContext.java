@@ -48,7 +48,7 @@ public class NewtonKrylovSolverContext {
         f[1] = 0.01 + v2 * 0.1 * (-Math.cos(ph2) + v2);
     }
 
-    public void updateJac(double[] x) {
+    public void updateJac(double[] x, int[] ap, int[] ai, double[] ax) {
         double v2 = x[0];
         double ph2 = x[1];
         double dp2dv2 = 0.1 * Math.sin(ph2);

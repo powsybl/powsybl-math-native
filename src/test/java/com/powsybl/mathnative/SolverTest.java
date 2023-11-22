@@ -26,7 +26,7 @@ class SolverTest {
         int[] ai = new int[nnz];
         double[] ax = new double[nnz];
         NewtonKrylovSolver solver = new NewtonKrylovSolver();
-        solver.solve(x, ap, ai, ax, new NewtonKrylovSolverContext(ap, ai, ax));
+        solver.solve(x, nnz, new NewtonKrylovSolverContext(ap, ai, ax));
         assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);
     }
 }
