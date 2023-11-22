@@ -9,6 +9,8 @@ package com.powsybl.math.solver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
@@ -16,13 +18,11 @@ public class NewtonKrylovSolverContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NewtonKrylovSolverContext.class);
 
-    private final double[] x;
     private final int[] ap;
     private final int[] ai;
     private final double[] ax;
 
-    public NewtonKrylovSolverContext(double[] x, int[] ap, int[] ai, double[] ax) {
-        this.x = x;
+    public NewtonKrylovSolverContext(int[] ap, int[] ai, double[] ax) {
         this.ap = ap;
         this.ai = ai;
         this.ax = ax;
@@ -38,7 +38,7 @@ public class NewtonKrylovSolverContext {
                 module, function, message);
     }
 
-    public void updateFunc(double[] f) {
+    public void updateFunc(double[] x, double[] f) {
         // 0 = 0.02 + v2 * 0.1 * sin(ph2)
         // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
         // solution: (0.855373, -0.236001)
@@ -48,7 +48,7 @@ public class NewtonKrylovSolverContext {
         f[1] = 0.01 + v2 * 0.1 * (-Math.cos(ph2) + v2);
     }
 
-    public void updateJac() {
+    public void updateJac(double[] x) {
         double v2 = x[0];
         double ph2 = x[1];
         double dp2dv2 = 0.1 * Math.sin(ph2);

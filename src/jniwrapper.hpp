@@ -121,10 +121,16 @@ public:
         _ptr(nullptr) {
     }
 
+    DoubleArray(JNIEnv* env, int length) :
+        DoubleArray(env, nullptr, length) {
+    }
+
     DoubleArray(JNIEnv* env, double* ptr, int length) :
         JniWrapper<jdoubleArray>(env, env->NewDoubleArray(length)),
         _ptr(nullptr) {
-        _env->SetDoubleArrayRegion(_obj, 0, length, ptr);
+        if (ptr) {
+            _env->SetDoubleArrayRegion(_obj, 0, length, ptr);
+        }
     }
 
     ~DoubleArray() override {

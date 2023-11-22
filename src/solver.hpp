@@ -22,9 +22,9 @@ public:
 
     void logInfo(const std::string& module, const std::string& function, const std::string& message);
 
-    void updateFunc(double* f, int length);
+    void updateFunc(double* x, double* f, int length);
 
-    void updateJac();
+    void updateJac(double* x, int length);
 
 private:
     static jclass _cls;
