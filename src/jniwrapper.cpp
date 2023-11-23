@@ -31,6 +31,17 @@ void throwSolverException(JNIEnv* env, const char* msg) {
     throwException(env, msg, "com/powsybl/math/solver/SolverException");
 }
 
+std::vector<double> createDoubleVector(JNIEnv* env, jdoubleArray jda) {
+    DoubleArray da(env, jda);
+    double* ptr = da.get();
+    return std::vector<double>(ptr, ptr + da.length());
+}
+
+void updateJavaDoubleArray(JNIEnv* env, jdoubleArray ja, const std::vector<double>& v) {
+    DoubleArray a(env, ja);
+    std::memcpy(a.get(), v.data(), v.size() * sizeof(double));
+}
+
 }  // namespace jni
 
 }  // namespace powsybl

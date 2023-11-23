@@ -16,13 +16,12 @@ public class NewtonKrylovSolverContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NewtonKrylovSolverContext.class);
 
-    private final int[] ap;
-    private final int[] ai;
+    private final double[] x;
+
     private final double[] ax;
 
-    public NewtonKrylovSolverContext(int[] ap, int[] ai, double[] ax) {
-        this.ap = ap;
-        this.ai = ai;
+    public NewtonKrylovSolverContext(double[] x, double[] ax) {
+        this.x = x;
         this.ax = ax;
     }
 
@@ -36,7 +35,7 @@ public class NewtonKrylovSolverContext {
                 module, function, message);
     }
 
-    public void updateFunc(double[] x, double[] f) {
+    public void updateFunc(double[] f) {
         // 0 = 0.02 + v2 * 0.1 * sin(ph2)
         // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
         // solution: (0.855373, -0.236001)
@@ -46,23 +45,16 @@ public class NewtonKrylovSolverContext {
         f[1] = 0.01 + v2 * 0.1 * (-Math.cos(ph2) + v2);
     }
 
-    public void updateJac(double[] x, int[] ap, int[] ai, double[] ax) {
+    public void updateJac() {
         double v2 = x[0];
         double ph2 = x[1];
         double dp2dv2 = 0.1 * Math.sin(ph2);
         double dp2dph2 = v2 * 0.1 * Math.cos(ph2);
         double dq2dv2 = -0.1 * Math.cos(ph2) + 2 * v2 * 0.1;
         double dq2dph2 = v2 * 0.1 * Math.sin(ph2);
-        ap[0] = 0;
-        ap[1] = 2;
-        ap[2] = 4;
         ax[0] = dp2dv2;
         ax[1] = dp2dph2;
         ax[2] = dq2dv2;
         ax[3] = dq2dph2;
-        ai[0] = 0;
-        ai[1] = 1;
-        ai[2] = 0;
-        ai[3] = 1;
     }
 }

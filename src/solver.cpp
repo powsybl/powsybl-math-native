@@ -34,8 +34,8 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::init(JNIEnv* env) {
     _cls = reinterpret_cast<jclass>(env->NewGlobalRef(localCls));
     _logError = env->GetMethodID(_cls, "logError", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
     _logInfo = env->GetMethodID(_cls, "logInfo", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
-    _updateFunc = env->GetMethodID(_cls, "updateFunc", "([D[D)V");
-    _updateJac = env->GetMethodID(_cls, "updateJac", "([D[I[I[D)V");
+    _updateFunc = env->GetMethodID(_cls, "updateFunc", "([D)V");
+    _updateJac = env->GetMethodID(_cls, "updateJac", "()V");
 }
 
 ComPowsyblMathSolverNewtonKrylovSolverContext::ComPowsyblMathSolverNewtonKrylovSolverContext(JNIEnv* env, jobject obj)
@@ -59,41 +59,51 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::logInfo(const std::string& m
                          _env->NewStringUTF(message.c_str()));
 }
 
-std::vector<double> copyFromJava(JNIEnv* env, jdoubleArray ja) {
-    DoubleArray a(env, ja);
-    double* ptr = a.get();
-    return std::vector<double>(ptr, ptr + a.length());
+void ComPowsyblMathSolverNewtonKrylovSolverContext::updateFunc(double* x, double* f, int n, jdoubleArray jx) {
+    // update x on Java side
+    {
+        DoubleArray xda(_env, jx);
+        std::memcpy(xda.get(), x, n * sizeof(double));
+    }
+
+    // call Java side update function callback
+    DoubleArray fda(_env, n);
+    _env->CallVoidMethod(_obj, _updateFunc, fda.obj());
+
+    // update f on C side
+    std::memcpy(f, fda.get(), n * sizeof(double));
 }
 
-void copyToJava(JNIEnv* env, jdoubleArray ja, const std::vector<double>& v) {
-    DoubleArray a(env, ja);
-    std::memcpy(a.get(), v.data(), v.size() * sizeof(double));
-}
+void ComPowsyblMathSolverNewtonKrylovSolverContext::updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz,
+                                                              jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax) {
+    // update x on Java side
+    {
+        DoubleArray xda(_env, jx);
+        std::memcpy(xda.get(), x, n * sizeof(double));
+    }
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::updateFunc(double* x, double* f, int n) {
-    DoubleArray jx(_env, x, n);
-    DoubleArray jf(_env, n);
-    _env->CallVoidMethod(_obj, _updateFunc, jx.obj(), jf.obj());
-    std::memcpy(f, jf.get(), n * sizeof(double));
-}
+    // call Java side update function callback
+    _env->CallVoidMethod(_obj, _updateJac);
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz) {
-    DoubleArray jx(_env, x, n);
-    IntArray jap(_env, n + 1);
-    IntArray jai(_env, nnz);
-    DoubleArray jax(_env, nnz);
-    _env->CallVoidMethod(_obj, _updateJac, jx.obj(), jap.obj(), jai.obj(), jax.obj());
-    std::memcpy(ap, jap.get(), (n + 1) * sizeof(int));
-    std::memcpy(ai, jai.get(), nnz * sizeof(int));
-    std::memcpy(ax, jax.get(), nnz * sizeof(double));
+    // update ax on C side
+    IntArray apia(_env, jap);
+    IntArray aiia(_env, jai);
+    DoubleArray axda(_env, jax);
+    std::memcpy(ap, apia.get(), apia.length() * sizeof(int));
+    std::memcpy(ai, aiia.get(), aiia.length() * sizeof(int));
+    std::memcpy(ax, axda.get(), axda.length() * sizeof(double));
 }
 
 }  // namespace jni
 
 class NewtonKrylovSolverContext {
 public:
-    NewtonKrylovSolverContext(JNIEnv* env, jobject jobj)
-        : _delegate(env, jobj) {
+    NewtonKrylovSolverContext(JNIEnv* env, jobject jSolverContext, jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax)
+        : _delegate(env, jSolverContext),
+          _jx(jx),
+          _jap(jap),
+          _jai(jai),
+          _jax(jax) {
     }
 
     void logError(int errorCode, const std::string& module, const std::string& function, const std::string& message) {
@@ -105,15 +115,19 @@ public:
     }
 
     void updateFunc(double* x, double* f, int n) {
-        _delegate.updateFunc(x, f, n);
+        _delegate.updateFunc(x, f, n, _jx);
     }
 
     void updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz) {
-        _delegate.updateJac(x, n, ap, ai, ax, nnz);
+        _delegate.updateJac(x, n, ap, ai, ax, nnz, _jx, _jap, _jai, _jax);
     }
 
 private:
     powsybl::jni::ComPowsyblMathSolverNewtonKrylovSolverContext _delegate;
+    jdoubleArray _jx;
+    jintArray _jap;
+    jintArray _jai;
+    jdoubleArray _jax;
 };
 
 static int evalFunc(N_Vector x, N_Vector f, void* user_data) {
@@ -129,9 +143,9 @@ static int evalJac(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vecto
     NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
     double* xd = N_VGetArrayPointer(x);
     int n = NV_LENGTH_S(x);
+    double* ax = SUNSparseMatrix_Data(j);
     int* ap = SUNSparseMatrix_IndexPointers(j);
     int* ai = SUNSparseMatrix_IndexValues(j);
-    double* ax = SUNSparseMatrix_Data(j);
     int nnz = SM_NNZ_S(j);
     solverContext->updateJac(xd, n, ap, ai, ax, nnz);
     return 0;
@@ -147,18 +161,26 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
     solverContext->logInfo(module, function, msg);
 }
 
-void solve(std::vector<double>& xd, int nnz, powsybl::NewtonKrylovSolverContext& solverContext,
-           int maxIter, bool lineSearch, int level) {
-    SUNContext sunCtx;
-    int error = SUNContext_Create(nullptr, &sunCtx);
-    if (error != 0) {
-        throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
-    }
+SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax) {
+    jni::IntArray apia(env, jap);
+    jni::IntArray aiia(env, jai);
+    jni::DoubleArray axda(env, jax);
+    int n = apia.length() - 1;
+    int nnz = aiia.length();
+    SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
+    int* ap = SUNSparseMatrix_IndexPointers(j);
+    int* ai = SUNSparseMatrix_IndexValues(j);
+    double* ax = SUNSparseMatrix_Data(j);
+    std::memcpy(ap, apia.get(), apia.length() * sizeof(int));
+    std::memcpy(ai, aiia.get(), aiia.length() * sizeof(int));
+    std::memcpy(ax, axda.get(), axda.length() * sizeof(double));
+    return j;
+}
 
+void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::NewtonKrylovSolverContext& solverContext,
+           int maxIter, bool lineSearch, int level) {
     int n = xd.size();
     N_Vector x = N_VMake_Serial(n, xd.data(), sunCtx);
-
-    SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
 
     SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
     if (!ls) {
@@ -170,7 +192,7 @@ void solve(std::vector<double>& xd, int nnz, powsybl::NewtonKrylovSolverContext&
         throw std::runtime_error("KINCreate error");
     }
 
-    error = KINInit(kinMem, powsybl::evalFunc, x);
+    int error = KINInit(kinMem, powsybl::evalFunc, x);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINInit error " + std::to_string(error));
     }
@@ -233,11 +255,6 @@ void solve(std::vector<double>& xd, int nnz, powsybl::NewtonKrylovSolverContext&
     SUNMatDestroy(j);
 
     N_VDestroy_Serial(x);
-
-    error = SUNContext_Free(&sunCtx);
-    if (error != 0) {
-        throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
-    }
 }
 
 }
@@ -246,15 +263,28 @@ void solve(std::vector<double>& xd, int nnz, powsybl::NewtonKrylovSolverContext&
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv * env, jobject, jdoubleArray jx, jint nnz, jobject jSolverContext) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax, jobject jSolverContext) {
     try {
-        std::vector<double> x = powsybl::jni::copyFromJava(env, jx);
-        powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext);
+        SUNContext sunCtx;
+        int error = SUNContext_Create(nullptr, &sunCtx);
+        if (error != 0) {
+            throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
+        }
+
+        std::vector<double> x = powsybl::jni::createDoubleVector(env, jx);
+        SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax);
+        powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext, jx, jap, jai, jax);
         int maxIter = 200;
         bool lineSearch = false;
         int level = 2;
-        powsybl::solve(x, nnz, solverContext, maxIter, lineSearch, level);
-        powsybl::jni::copyToJava(env, jx, x);
+        powsybl::solve(sunCtx, x, j, solverContext, maxIter, lineSearch, level);
+
+        powsybl::jni::updateJavaDoubleArray(env, jx, x);
+
+        error = SUNContext_Free(&sunCtx);
+        if (error != 0) {
+            throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
+        }
     } catch (const std::exception& e) {
         powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {

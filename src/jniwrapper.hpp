@@ -164,6 +164,9 @@ void throwMathException(JNIEnv* env, const char* msg);
 void throwMatrixException(JNIEnv* env, const char* msg);
 void throwSolverException(JNIEnv* env, const char* msg);
 
+std::vector<double> createDoubleVector(JNIEnv* env, jdoubleArray jda);
+void updateJavaDoubleArray(JNIEnv* env, jdoubleArray ja, const std::vector<double>& v);
+
 }  // namespace jni
 
 }  // namespace powsybl
