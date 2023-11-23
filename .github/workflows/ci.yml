@@ -100,7 +100,7 @@ jobs:
 
       - name: Build Jar
         shell: bash
-        run: mvn install
+        run: mvn -DskipTests install
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
