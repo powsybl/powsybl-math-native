@@ -9,13 +9,13 @@ package com.powsybl.math.solver;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class SolverException extends RuntimeException {
+public class NewtonKrylovSolverException extends RuntimeException {
 
-    public SolverException(String msg) {
+    public NewtonKrylovSolverException(String msg) {
         super(msg);
     }
 
-    public SolverException(Throwable throwable) {
+    public NewtonKrylovSolverException(Throwable throwable) {
         super(throwable);
     }
 }

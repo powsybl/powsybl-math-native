@@ -27,8 +27,8 @@ void throwMatrixException(JNIEnv* env, const char* msg) {
     throwException(env, msg, "com/powsybl/math/matrix/MatrixException");
 }
 
-void throwSolverException(JNIEnv* env, const char* msg) {
-    throwException(env, msg, "com/powsybl/math/solver/SolverException");
+void throwNewtonKrylovSolverException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/solver/NewtonKrylovSolverException");
 }
 
 std::vector<double> createDoubleVector(JNIEnv* env, jdoubleArray jda) {

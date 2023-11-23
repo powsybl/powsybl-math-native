@@ -17,5 +17,6 @@ public class NewtonKrylovSolver {
         MathNative.init();
     }
 
-    public native void solve(double[] x, int[] ap, int[] ai, double[] ax, NewtonKrylovSolverContext context);
+    public native int solve(double[] x, int[] ap, int[] ai, double[] ax, NewtonKrylovSolverContext context,
+                            int maxIterations, boolean lineSearch, int printLevel);
 }

@@ -11,6 +11,7 @@ import com.powsybl.math.solver.NewtonKrylovSolverContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
@@ -24,7 +25,11 @@ class SolverTest {
         int[] ai = new int[] {0, 1, 0, 1};
         double[] ax = new double[4];
         NewtonKrylovSolver solver = new NewtonKrylovSolver();
-        solver.solve(x, ap, ai, ax, new NewtonKrylovSolverContext(x, ax));
+        int maxIterations = 15;
+        boolean lineSearch = false;
+        int printLevel = 2;
+        int status = solver.solve(x, ap, ai, ax, new NewtonKrylovSolverContext(x, ax), maxIterations, lineSearch, printLevel);
+        assertEquals(0, status);
         assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);
     }
 }

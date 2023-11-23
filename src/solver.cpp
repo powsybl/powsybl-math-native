@@ -177,8 +177,8 @@ SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jin
     return j;
 }
 
-void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::NewtonKrylovSolverContext& solverContext,
-           int maxIter, bool lineSearch, int level) {
+int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::NewtonKrylovSolverContext& solverContext,
+          int maxIterations, bool lineSearch, int printLevel) {
     int n = xd.size();
     N_Vector x = N_VMake_Serial(n, xd.data(), sunCtx);
 
@@ -217,7 +217,7 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::N
         throw std::runtime_error("KINSetInfoHandlerFn error " + std::to_string(error));
     }
 
-    error = KINSetPrintLevel(kinMem, level);
+    error = KINSetPrintLevel(kinMem, printLevel);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetPrintLevel error " + std::to_string(error));
     }
@@ -227,7 +227,7 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::N
         throw std::runtime_error("KINSetUserData error " + std::to_string(error));
     }
 
-    error = KINSetNumMaxIters(kinMem, maxIter);
+    error = KINSetNumMaxIters(kinMem, maxIterations);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
     }
@@ -240,10 +240,7 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::N
     N_Vector scale = N_VNew_Serial(n, sunCtx);
     N_VConst(1, scale); // no scale
 
-    error = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
-    if (error != KIN_SUCCESS) {
-        throw std::runtime_error("KINSol error " + std::to_string(error));
-    }
+    int status = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
 
     KINFree(&kinMem);
 
@@ -255,6 +252,8 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::N
     SUNMatDestroy(j);
 
     N_VDestroy_Serial(x);
+
+    return status;
 }
 
 }
@@ -263,7 +262,10 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::N
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax, jobject jSolverContext) {
+JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
+                                                                             jintArray jai, jdoubleArray jax, jobject jSolverContext,
+                                                                             jint maxIterations, jboolean lineSearch, jint printLevel) {
+    int status = -1;
     try {
         SUNContext sunCtx;
         int error = SUNContext_Create(nullptr, &sunCtx);
@@ -273,11 +275,10 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
 
         std::vector<double> x = powsybl::jni::createDoubleVector(env, jx);
         SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax);
+
+        // run solver
         powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext, jx, jap, jai, jax);
-        int maxIter = 200;
-        bool lineSearch = false;
-        int level = 2;
-        powsybl::solve(sunCtx, x, j, solverContext, maxIter, lineSearch, level);
+        status = powsybl::solve(sunCtx, x, j, solverContext, maxIterations, lineSearch, printLevel);
 
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
 
@@ -290,6 +291,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
     } catch (...) {
         powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
+    return status;
 }
 
 #ifdef __cplusplus
