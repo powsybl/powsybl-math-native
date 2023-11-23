@@ -9,8 +9,6 @@ package com.powsybl.math.solver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
@@ -53,7 +51,7 @@ public class NewtonKrylovSolverContext {
         double ph2 = x[1];
         double dp2dv2 = 0.1 * Math.sin(ph2);
         double dp2dph2 = v2 * 0.1 * Math.cos(ph2);
-        double dq2dv2 = - 0.1 * Math.cos(ph2) + 2 * v2 * 0.1;
+        double dq2dv2 = -0.1 * Math.cos(ph2) + 2 * v2 * 0.1;
         double dq2dph2 = v2 * 0.1 * Math.sin(ph2);
         ap[0] = 0;
         ap[1] = 2;
