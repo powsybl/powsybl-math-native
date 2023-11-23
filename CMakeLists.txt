@@ -23,7 +23,6 @@ set(suitesparse_archive "v${suitesparse_version}.tar.gz")
 set(suitesparse_url https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/${suitesparse_archive})
 set(suitesparse_url_hash "MD5=735b8856ce333bf5d8773ba20685c8b8")
 
-include(FetchContent)
 FetchContent_Declare(SuiteSparse
   URL ${suitesparse_url}
   URL_HASH ${suitesparse_url_has}
