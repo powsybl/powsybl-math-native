@@ -34,6 +34,17 @@ private:
     static jmethodID _updateJac;
 };
 
+class ComPowsyblMathSolverKinsolResult : public JniWrapper<jobject> {
+public:
+    ComPowsyblMathSolverKinsolResult(JNIEnv* env, int status, long iterations);
+
+    static void init(JNIEnv* env);
+
+private:
+    static jclass _cls;
+    static jmethodID _constructor;
+};
+
 }  // namespace jni
 
 }  // namespace powsybl

@@ -6,17 +6,25 @@
  */
 package com.powsybl.math.solver;
 
-import com.powsybl.math.MathNative;
-
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class Kinsol {
+public class KinsolResult {
 
-    static {
-        MathNative.init();
+    private final int status;
+
+    private final long iterations;
+
+    public KinsolResult(int status, long iterations) {
+        this.status = status;
+        this.iterations = iterations;
     }
 
-    public native KinsolResult solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,
-                                     int maxIterations, boolean lineSearch, int printLevel);
+    public int getStatus() {
+        return status;
+    }
+
+    public long getIterations() {
+        return iterations;
+    }
 }

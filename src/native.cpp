@@ -26,6 +26,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_MathNative_nativeInit(JNIEnv * env,
         // lookup caching
         powsybl::jni::ComPowsyblMathMatrixSparseMatrix::init(env);
         powsybl::jni::ComPowsyblMathSolverKinsolContext::init(env);
+        powsybl::jni::ComPowsyblMathSolverKinsolResult::init(env);
     } catch (const std::exception& e) {
         powsybl::jni::throwMathException(env, e.what());
     } catch (...) {

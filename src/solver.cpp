@@ -94,6 +94,19 @@ void ComPowsyblMathSolverKinsolContext::updateJac(double* x, int n, int* ap, int
     std::memcpy(ax, axda.get(), axda.length() * sizeof(double));
 }
 
+jclass ComPowsyblMathSolverKinsolResult::_cls = nullptr;
+jmethodID ComPowsyblMathSolverKinsolResult::_constructor = nullptr;
+
+void ComPowsyblMathSolverKinsolResult::init(JNIEnv* env) {
+    jclass localCls = env->FindClass("com/powsybl/math/solver/KinsolResult");
+    _cls = reinterpret_cast<jclass>(env->NewGlobalRef(localCls));
+    _constructor = env->GetMethodID(_cls, "<init>", "(IJ)V");
+}
+
+ComPowsyblMathSolverKinsolResult::ComPowsyblMathSolverKinsolResult(JNIEnv* env, int status, long iterations)
+    : JniWrapper<jobject>(env, env->NewObject(_cls, _constructor, status, iterations)) {
+}
+
 }  // namespace jni
 
 class KinsolContext {
@@ -177,8 +190,8 @@ SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jin
     return j;
 }
 
-int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::KinsolContext& context,
-          int maxIterations, bool lineSearch, int printLevel) {
+void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::KinsolContext& context,
+           int maxIterations, bool lineSearch, int printLevel, int& status, long& iterations) {
     int n = xd.size();
     N_Vector x = N_VMake_Serial(n, xd.data(), sunCtx);
 
@@ -240,7 +253,12 @@ int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::Ki
     N_Vector scale = N_VNew_Serial(n, sunCtx);
     N_VConst(1, scale); // no scale
 
-    int status = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
+    status = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
+
+    error = KINGetNumNonlinSolvIters(kinMem, &iterations);
+    if (error != KINLS_SUCCESS) {
+        throw std::runtime_error("KINGetNumLinIters error " + std::to_string(error));
+    }
 
     KINFree(&kinMem);
 
@@ -252,8 +270,6 @@ int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::Ki
     SUNMatDestroy(j);
 
     N_VDestroy_Serial(x);
-
-    return status;
 }
 
 }
@@ -262,9 +278,9 @@ int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::Ki
 extern "C" {
 #endif
 
-JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
-                                                                 jintArray jai, jdoubleArray jax, jobject jContext,
-                                                                 jint maxIterations, jboolean lineSearch, jint printLevel) {
+JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
+                                                                    jintArray jai, jdoubleArray jax, jobject jContext,
+                                                                    jint maxIterations, jboolean lineSearch, jint printLevel) {
     int status = -1;
     try {
         SUNContext sunCtx;
@@ -278,7 +294,9 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jo
 
         // run solver
         powsybl::KinsolContext context(env, jContext, jx, jap, jai, jax);
-        status = powsybl::solve(sunCtx, x, j, context, maxIterations, lineSearch, printLevel);
+        int status;
+        long iterations;
+        powsybl::solve(sunCtx, x, j, context, maxIterations, lineSearch, printLevel, status, iterations);
 
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
 
@@ -286,12 +304,14 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jo
         if (error != 0) {
             throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
         }
+
+        return powsybl::jni::ComPowsyblMathSolverKinsolResult(env, status, iterations).obj();
     } catch (const std::exception& e) {
         powsybl::jni::throwKinsolException(env, e.what());
     } catch (...) {
         powsybl::jni::throwKinsolException(env, "Unknown exception");
     }
-    return status;
+    return nullptr;
 }
 
 #ifdef __cplusplus

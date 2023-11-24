@@ -8,6 +8,7 @@ package com.powsybl.mathnative;
 
 import com.powsybl.math.solver.Kinsol;
 import com.powsybl.math.solver.KinsolContext;
+import com.powsybl.math.solver.KinsolResult;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -28,8 +29,9 @@ class KinsolTest {
         int maxIterations = 15;
         boolean lineSearch = false;
         int printLevel = 2;
-        int status = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), maxIterations, lineSearch, printLevel);
-        assertEquals(0, status);
+        KinsolResult result = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), maxIterations, lineSearch, printLevel);
+        assertEquals(0, result.getStatus());
+        assertEquals(4, result.getIterations());
         assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);
     }
 }
