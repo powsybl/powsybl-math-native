@@ -12,15 +12,15 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class NewtonKrylovSolverContext {
+public class KinsolContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NewtonKrylovSolverContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KinsolContext.class);
 
     private final double[] x;
 
     private final double[] ax;
 
-    public NewtonKrylovSolverContext(double[] x, double[] ax) {
+    public KinsolContext(double[] x, double[] ax) {
         this.x = x;
         this.ax = ax;
     }

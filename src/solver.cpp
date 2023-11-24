@@ -23,14 +23,14 @@ namespace powsybl {
 
 namespace jni {
 
-jclass ComPowsyblMathSolverNewtonKrylovSolverContext::_cls = nullptr;
-jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_logError = nullptr;
-jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_logInfo = nullptr;
-jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_updateFunc = nullptr;
-jmethodID ComPowsyblMathSolverNewtonKrylovSolverContext::_updateJac = nullptr;
+jclass ComPowsyblMathSolverKinsolContext::_cls = nullptr;
+jmethodID ComPowsyblMathSolverKinsolContext::_logError = nullptr;
+jmethodID ComPowsyblMathSolverKinsolContext::_logInfo = nullptr;
+jmethodID ComPowsyblMathSolverKinsolContext::_updateFunc = nullptr;
+jmethodID ComPowsyblMathSolverKinsolContext::_updateJac = nullptr;
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::init(JNIEnv* env) {
-    jclass localCls = env->FindClass("com/powsybl/math/solver/NewtonKrylovSolverContext");
+void ComPowsyblMathSolverKinsolContext::init(JNIEnv* env) {
+    jclass localCls = env->FindClass("com/powsybl/math/solver/KinsolContext");
     _cls = reinterpret_cast<jclass>(env->NewGlobalRef(localCls));
     _logError = env->GetMethodID(_cls, "logError", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
     _logInfo = env->GetMethodID(_cls, "logInfo", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
@@ -38,11 +38,11 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::init(JNIEnv* env) {
     _updateJac = env->GetMethodID(_cls, "updateJac", "()V");
 }
 
-ComPowsyblMathSolverNewtonKrylovSolverContext::ComPowsyblMathSolverNewtonKrylovSolverContext(JNIEnv* env, jobject obj)
+ComPowsyblMathSolverKinsolContext::ComPowsyblMathSolverKinsolContext(JNIEnv* env, jobject obj)
     : JniWrapper<jobject>(env, obj) {
 }
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::logError(int errorCode, const std::string& module, const std::string& function, const std::string& message) {
+void ComPowsyblMathSolverKinsolContext::logError(int errorCode, const std::string& module, const std::string& function, const std::string& message) {
     _env->CallVoidMethod(_obj,
                          _logError,
                          errorCode,
@@ -51,7 +51,7 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::logError(int errorCode, cons
                          _env->NewStringUTF(message.c_str()));
 }
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::logInfo(const std::string& module, const std::string& function, const std::string& message) {
+void ComPowsyblMathSolverKinsolContext::logInfo(const std::string& module, const std::string& function, const std::string& message) {
     _env->CallVoidMethod(_obj,
                          _logInfo,
                          _env->NewStringUTF(module.c_str()),
@@ -59,7 +59,7 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::logInfo(const std::string& m
                          _env->NewStringUTF(message.c_str()));
 }
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::updateFunc(double* x, double* f, int n, jdoubleArray jx) {
+void ComPowsyblMathSolverKinsolContext::updateFunc(double* x, double* f, int n, jdoubleArray jx) {
     // update x on Java side
     {
         DoubleArray xda(_env, jx);
@@ -74,7 +74,7 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::updateFunc(double* x, double
     std::memcpy(f, fda.get(), n * sizeof(double));
 }
 
-void ComPowsyblMathSolverNewtonKrylovSolverContext::updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz,
+void ComPowsyblMathSolverKinsolContext::updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz,
                                                               jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax) {
     // update x on Java side
     {
@@ -96,9 +96,9 @@ void ComPowsyblMathSolverNewtonKrylovSolverContext::updateJac(double* x, int n, 
 
 }  // namespace jni
 
-class NewtonKrylovSolverContext {
+class KinsolContext {
 public:
-    NewtonKrylovSolverContext(JNIEnv* env, jobject jSolverContext, jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax)
+    KinsolContext(JNIEnv* env, jobject jSolverContext, jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax)
         : _delegate(env, jSolverContext),
           _jx(jx),
           _jap(jap),
@@ -123,7 +123,7 @@ public:
     }
 
 private:
-    powsybl::jni::ComPowsyblMathSolverNewtonKrylovSolverContext _delegate;
+    powsybl::jni::ComPowsyblMathSolverKinsolContext _delegate;
     jdoubleArray _jx;
     jintArray _jap;
     jintArray _jai;
@@ -131,34 +131,34 @@ private:
 };
 
 static int evalFunc(N_Vector x, N_Vector f, void* user_data) {
-    NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
+    KinsolContext* context = (KinsolContext*) user_data;
     double* xd = N_VGetArrayPointer(x);
     double* fd = N_VGetArrayPointer(f);
     int n = NV_LENGTH_S(x);
-    solverContext->updateFunc(xd, fd, n);
+    context->updateFunc(xd, fd, n);
     return 0;
 }
 
 static int evalJac(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
-    NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
+    KinsolContext* context = (KinsolContext*) user_data;
     double* xd = N_VGetArrayPointer(x);
     int n = NV_LENGTH_S(x);
     double* ax = SUNSparseMatrix_Data(j);
     int* ap = SUNSparseMatrix_IndexPointers(j);
     int* ai = SUNSparseMatrix_IndexValues(j);
     int nnz = SM_NNZ_S(j);
-    solverContext->updateJac(xd, n, ap, ai, ax, nnz);
+    context->updateJac(xd, n, ap, ai, ax, nnz);
     return 0;
 }
 
 static void errorHandler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
-    NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
-    solverContext->logError(error_code, module, function, msg);
+    KinsolContext* context = (KinsolContext*) user_data;
+    context->logError(error_code, module, function, msg);
 }
 
 static void infoHandler(const char* module, const char* function, char* msg, void* user_data) {
-    NewtonKrylovSolverContext* solverContext = (NewtonKrylovSolverContext*) user_data;
-    solverContext->logInfo(module, function, msg);
+    KinsolContext* context = (KinsolContext*) user_data;
+    context->logInfo(module, function, msg);
 }
 
 SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax) {
@@ -177,7 +177,7 @@ SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jin
     return j;
 }
 
-int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::NewtonKrylovSolverContext& solverContext,
+int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::KinsolContext& context,
           int maxIterations, bool lineSearch, int printLevel) {
     int n = xd.size();
     N_Vector x = N_VMake_Serial(n, xd.data(), sunCtx);
@@ -207,12 +207,12 @@ int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::Ne
         throw std::runtime_error("KINSetJacFn error " + std::to_string(error));
     }
 
-    error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, &solverContext);
+    error = KINSetErrHandlerFn(kinMem, powsybl::errorHandler, &context);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetErrHandlerFn error " + std::to_string(error));
     }
 
-    error = KINSetInfoHandlerFn(kinMem, powsybl::infoHandler, &solverContext);
+    error = KINSetInfoHandlerFn(kinMem, powsybl::infoHandler, &context);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetInfoHandlerFn error " + std::to_string(error));
     }
@@ -222,7 +222,7 @@ int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::Ne
         throw std::runtime_error("KINSetPrintLevel error " + std::to_string(error));
     }
 
-    error = KINSetUserData(kinMem, &solverContext);
+    error = KINSetUserData(kinMem, &context);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetUserData error " + std::to_string(error));
     }
@@ -262,9 +262,9 @@ int solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::Ne
 extern "C" {
 #endif
 
-JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
-                                                                             jintArray jai, jdoubleArray jax, jobject jSolverContext,
-                                                                             jint maxIterations, jboolean lineSearch, jint printLevel) {
+JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
+                                                                 jintArray jai, jdoubleArray jax, jobject jContext,
+                                                                 jint maxIterations, jboolean lineSearch, jint printLevel) {
     int status = -1;
     try {
         SUNContext sunCtx;
@@ -277,8 +277,8 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
         SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax);
 
         // run solver
-        powsybl::NewtonKrylovSolverContext solverContext(env, jSolverContext, jx, jap, jai, jax);
-        status = powsybl::solve(sunCtx, x, j, solverContext, maxIterations, lineSearch, printLevel);
+        powsybl::KinsolContext context(env, jContext, jx, jap, jai, jax);
+        status = powsybl::solve(sunCtx, x, j, context, maxIterations, lineSearch, printLevel);
 
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
 
@@ -287,9 +287,9 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_NewtonKrylovSolver_solve(JNI
             throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
         }
     } catch (const std::exception& e) {
-        powsybl::jni::throwMatrixException(env, e.what());
+        powsybl::jni::throwKinsolException(env, e.what());
     } catch (...) {
-        powsybl::jni::throwMatrixException(env, "Unknown exception");
+        powsybl::jni::throwKinsolException(env, "Unknown exception");
     }
     return status;
 }

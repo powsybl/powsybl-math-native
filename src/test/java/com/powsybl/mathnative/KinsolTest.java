@@ -6,8 +6,8 @@
  */
 package com.powsybl.mathnative;
 
-import com.powsybl.math.solver.NewtonKrylovSolver;
-import com.powsybl.math.solver.NewtonKrylovSolverContext;
+import com.powsybl.math.solver.Kinsol;
+import com.powsybl.math.solver.KinsolContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-class SolverTest {
+class KinsolTest {
 
     @Test
     void test() {
@@ -24,11 +24,11 @@ class SolverTest {
         int[] ap = new int[] {0, 2, 4};
         int[] ai = new int[] {0, 1, 0, 1};
         double[] ax = new double[4];
-        NewtonKrylovSolver solver = new NewtonKrylovSolver();
+        Kinsol solver = new Kinsol();
         int maxIterations = 15;
         boolean lineSearch = false;
         int printLevel = 2;
-        int status = solver.solve(x, ap, ai, ax, new NewtonKrylovSolverContext(x, ax), maxIterations, lineSearch, printLevel);
+        int status = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), maxIterations, lineSearch, printLevel);
         assertEquals(0, status);
         assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);
     }

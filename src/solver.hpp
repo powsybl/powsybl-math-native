@@ -12,9 +12,9 @@ namespace powsybl {
 
 namespace jni {
 
-class ComPowsyblMathSolverNewtonKrylovSolverContext : public JniWrapper<jobject> {
+class ComPowsyblMathSolverKinsolContext : public JniWrapper<jobject> {
 public:
-    ComPowsyblMathSolverNewtonKrylovSolverContext(JNIEnv* env, jobject ob);
+    ComPowsyblMathSolverKinsolContext(JNIEnv* env, jobject ob);
 
     static void init(JNIEnv* env);
 

@@ -6,16 +6,17 @@
  */
 package com.powsybl.math.solver;
 
+import com.powsybl.math.MathNative;
+
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class NewtonKrylovSolverException extends RuntimeException {
+public class Kinsol {
 
-    public NewtonKrylovSolverException(String msg) {
-        super(msg);
+    static {
+        MathNative.init();
     }
 
-    public NewtonKrylovSolverException(Throwable throwable) {
-        super(throwable);
-    }
+    public native int solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,
+                            int maxIterations, boolean lineSearch, int printLevel);
 }
