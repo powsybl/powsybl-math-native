@@ -17,11 +17,11 @@ extern "C" {
 #endif
 
 /*
- * Class:     com_powsybl_math_MathNative
+ * Class:     com_powsybl_math_AbstractMathNative
  * Method:    nativeInit
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_MathNative_nativeInit(JNIEnv * env, jclass) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_AbstractMathNative_nativeInit(JNIEnv * env, jclass) {
     try {
         // lookup caching
         powsybl::jni::ComPowsyblMathMatrixSparseMatrix::init(env);

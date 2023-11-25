@@ -6,12 +6,12 @@
  */
 package com.powsybl.math.solver;
 
-import com.powsybl.math.MathNative;
+import com.powsybl.math.AbstractMathNative;
 
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class Kinsol extends MathNative {
+public class Kinsol extends AbstractMathNative {
 
     public native KinsolResult solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,
                                      boolean transpose, int maxIterations, boolean lineSearch, int printLevel);

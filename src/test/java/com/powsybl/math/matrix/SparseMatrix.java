@@ -6,12 +6,12 @@
  */
 package com.powsybl.math.matrix;
 
-import com.powsybl.math.MathNative;
+import com.powsybl.math.AbstractMathNative;
 
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class SparseMatrix extends MathNative {
+public class SparseMatrix extends AbstractMathNative {
 
     public SparseMatrix(int rowCount, int columnCount, int[] columnStart, int[] rowIndices, double[] values) {
     }

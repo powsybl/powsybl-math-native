@@ -14,21 +14,16 @@ import java.io.UncheckedIOException;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class MathNative {
-
-    private static boolean INIT = false;
+public abstract class AbstractMathNative {
 
     private static native void nativeInit();
 
     static {
-        if (!INIT) {
-            try {
-                NativeLoader.loadLibrary("math");
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            nativeInit();
-            INIT = true;
+        try {
+            NativeLoader.loadLibrary("math");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
+        nativeInit();
     }
 }
