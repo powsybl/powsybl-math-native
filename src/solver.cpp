@@ -174,13 +174,14 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
     context->logInfo(module, function, msg);
 }
 
-SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax) {
+SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax,
+                             bool transpose) {
     jni::IntArray apia(env, jap);
     jni::IntArray aiia(env, jai);
     jni::DoubleArray axda(env, jax);
     int n = apia.length() - 1;
     int nnz = aiia.length();
-    SUNMatrix j = SUNSparseMatrix(n, n, nnz, CSC_MAT, sunCtx);
+    SUNMatrix j = SUNSparseMatrix(n, n, nnz, transpose ? CSR_MAT : CSC_MAT, sunCtx);
     int* ap = SUNSparseMatrix_IndexPointers(j);
     int* ai = SUNSparseMatrix_IndexValues(j);
     double* ax = SUNSparseMatrix_Data(j);
@@ -280,7 +281,8 @@ extern "C" {
 
 JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
                                                                     jintArray jai, jdoubleArray jax, jobject jContext,
-                                                                    jint maxIterations, jboolean lineSearch, jint printLevel) {
+                                                                    jboolean transpose, jint maxIterations, jboolean lineSearch,
+                                                                    jint printLevel) {
     int status = -1;
     try {
         SUNContext sunCtx;
@@ -290,7 +292,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
         }
 
         std::vector<double> x = powsybl::jni::createDoubleVector(env, jx);
-        SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax);
+        SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax, transpose);
 
         // run solver
         powsybl::KinsolContext context(env, jContext, jx, jap, jai, jax);

@@ -29,7 +29,7 @@ class KinsolTest {
         int maxIterations = 15;
         boolean lineSearch = false;
         int printLevel = 2;
-        KinsolResult result = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), maxIterations, lineSearch, printLevel);
+        KinsolResult result = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), false, maxIterations, lineSearch, printLevel);
         assertEquals(0, result.getStatus());
         assertEquals(4, result.getIterations());
         assertArrayEquals(new double[] {0.85545, -0.235992}, x, 1e-6);

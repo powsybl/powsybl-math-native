@@ -18,5 +18,5 @@ public class Kinsol {
     }
 
     public native KinsolResult solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,
-                                     int maxIterations, boolean lineSearch, int printLevel);
+                                     boolean transpose, int maxIterations, boolean lineSearch, int printLevel);
 }
