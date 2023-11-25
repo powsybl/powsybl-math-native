@@ -14,7 +14,7 @@ import com.powsybl.math.MathNative;
 public class SparseMatrix {
 
     static {
-        MathNative.init();
+        MathNative.INSTANCE.init();
     }
 
     public SparseMatrix(int rowCount, int columnCount, int[] columnStart, int[] rowIndices, double[] values) {

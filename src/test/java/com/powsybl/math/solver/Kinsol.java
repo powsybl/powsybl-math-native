@@ -14,7 +14,7 @@ import com.powsybl.math.MathNative;
 public class Kinsol {
 
     static {
-        MathNative.init();
+        MathNative.INSTANCE.init();
     }
 
     public native KinsolResult solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,

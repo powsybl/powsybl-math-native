@@ -21,7 +21,7 @@ extern "C" {
  * Method:    nativeInit
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_MathNative_nativeInit(JNIEnv * env, jclass) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_MathNative_nativeInit(JNIEnv * env, jobject) {
     try {
         // lookup caching
         powsybl::jni::ComPowsyblMathMatrixSparseMatrix::init(env);
