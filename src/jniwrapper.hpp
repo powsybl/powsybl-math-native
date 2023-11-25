@@ -12,6 +12,7 @@
 #define JNIWRAPPER_HPP
 
 #include <string>
+#include <vector>
 #include <jni.h>
 
 namespace powsybl {
