@@ -283,7 +283,6 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
                                                                     jintArray jai, jdoubleArray jax, jobject jContext,
                                                                     jboolean transpose, jint maxIterations, jboolean lineSearch,
                                                                     jint printLevel) {
-    int status = -1;
     try {
         SUNContext sunCtx;
         int error = SUNContext_Create(nullptr, &sunCtx);
@@ -297,7 +296,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
         // run solver
         powsybl::KinsolContext context(env, jContext, jx, jap, jai, jax);
         int status;
-        long iterations;
+        long iterations = 0;
         powsybl::solve(sunCtx, x, j, context, maxIterations, lineSearch, printLevel, status, iterations);
 
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
