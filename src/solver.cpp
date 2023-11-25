@@ -75,7 +75,7 @@ void ComPowsyblMathSolverKinsolContext::updateFunc(double* x, double* f, int n, 
 }
 
 void ComPowsyblMathSolverKinsolContext::updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz,
-                                                              jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax) {
+                                                  jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax) {
     // update x on Java side
     {
         DoubleArray xda(_env, jx);
@@ -268,8 +268,6 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::K
         throw std::runtime_error("SUNLinSolFree_KLU error " + std::to_string(error));
     }
 
-    SUNMatDestroy(j);
-
     N_VDestroy_Serial(x);
 }
 
@@ -298,6 +296,8 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
         int status;
         long iterations = 0;
         powsybl::solve(sunCtx, x, j, context, maxIterations, lineSearch, printLevel, status, iterations);
+
+        SUNMatDestroy(j);
 
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
 
