@@ -245,11 +245,11 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::K
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
     }
-
-    error = KINSetMaxSetupCalls(kinMem, 1);
-    if (error != KIN_SUCCESS) {
-        throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
-    }
+//
+//    error = KINSetMaxSetupCalls(kinMem, 1);
+//    if (error != KIN_SUCCESS) {
+//        throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
+//    }
 
     N_Vector scale = N_VNew_Serial(n, sunCtx);
     N_VConst(1, scale); // no scale

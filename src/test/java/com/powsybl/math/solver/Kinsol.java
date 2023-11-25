@@ -11,11 +11,7 @@ import com.powsybl.math.MathNative;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class Kinsol {
-
-    static {
-        MathNative.INSTANCE.init();
-    }
+public class Kinsol extends MathNative {
 
     public native KinsolResult solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,
                                      boolean transpose, int maxIterations, boolean lineSearch, int printLevel);

@@ -11,11 +11,7 @@ import com.powsybl.math.MathNative;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class SparseMatrix {
-
-    static {
-        MathNative.INSTANCE.init();
-    }
+public class SparseMatrix extends MathNative {
 
     public SparseMatrix(int rowCount, int columnCount, int[] columnStart, int[] rowIndices, double[] values) {
     }

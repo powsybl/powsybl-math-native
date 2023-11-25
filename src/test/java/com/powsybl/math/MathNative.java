@@ -14,22 +14,21 @@ import java.io.UncheckedIOException;
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public enum MathNative {
-    INSTANCE;
+public class MathNative {
 
-    private boolean init = false;
+    private static boolean INIT = false;
 
-    private native void nativeInit();
+    private static native void nativeInit();
 
-    public synchronized void init() {
-        if (!init) {
+    static {
+        if (!INIT) {
             try {
                 NativeLoader.loadLibrary("math");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
             nativeInit();
-            init = true;
+            INIT = true;
         }
     }
 }
