@@ -18,6 +18,9 @@ public abstract class AbstractMathNative {
 
     private static native void nativeInit();
 
+    protected AbstractMathNative() {
+    }
+
     static {
         try {
             NativeLoader.loadLibrary("math");
