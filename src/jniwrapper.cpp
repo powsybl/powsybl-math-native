@@ -8,6 +8,7 @@
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
+#include <cstring>
 #include "jniwrapper.hpp"
 
 namespace powsybl {
