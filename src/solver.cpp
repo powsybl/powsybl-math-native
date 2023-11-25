@@ -103,7 +103,7 @@ void ComPowsyblMathSolverKinsolResult::init(JNIEnv* env) {
     _constructor = env->GetMethodID(_cls, "<init>", "(IJ)V");
 }
 
-ComPowsyblMathSolverKinsolResult::ComPowsyblMathSolverKinsolResult(JNIEnv* env, int status, long iterations)
+ComPowsyblMathSolverKinsolResult::ComPowsyblMathSolverKinsolResult(JNIEnv* env, jint status, jlong iterations)
     : JniWrapper<jobject>(env, env->NewObject(_cls, _constructor, status, iterations)) {
 }
 

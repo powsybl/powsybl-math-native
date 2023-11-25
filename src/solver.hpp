@@ -36,7 +36,7 @@ private:
 
 class ComPowsyblMathSolverKinsolResult : public JniWrapper<jobject> {
 public:
-    ComPowsyblMathSolverKinsolResult(JNIEnv* env, int status, long iterations);
+    ComPowsyblMathSolverKinsolResult(JNIEnv* env, jint status, jlong iterations);
 
     static void init(JNIEnv* env);
 
