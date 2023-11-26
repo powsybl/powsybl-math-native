@@ -8,6 +8,9 @@
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
+#ifndef SOLVER_HPP
+#define SOLVER_HPP
+
 namespace powsybl {
 
 namespace jni {
@@ -48,3 +51,5 @@ private:
 }  // namespace jni
 
 }  // namespace powsybl
+
+#endif // SOLVER_HPP

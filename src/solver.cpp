@@ -144,7 +144,7 @@ private:
 };
 
 static int evalFunc(N_Vector x, N_Vector f, void* user_data) {
-    KinsolContext* context = (KinsolContext*) user_data;
+    auto* context = (KinsolContext*) user_data;
     double* xd = N_VGetArrayPointer(x);
     double* fd = N_VGetArrayPointer(f);
     int n = NV_LENGTH_S(x);
@@ -153,7 +153,7 @@ static int evalFunc(N_Vector x, N_Vector f, void* user_data) {
 }
 
 static int evalJac(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
-    KinsolContext* context = (KinsolContext*) user_data;
+    auto* context = (KinsolContext*) user_data;
     double* xd = N_VGetArrayPointer(x);
     int n = NV_LENGTH_S(x);
     double* ax = SUNSparseMatrix_Data(j);
@@ -165,12 +165,12 @@ static int evalJac(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vecto
 }
 
 static void errorHandler(int error_code, const char* module, const char* function, char* msg, void* user_data) {
-    KinsolContext* context = (KinsolContext*) user_data;
+    auto* context = (KinsolContext*) user_data;
     context->logError(error_code, module, function, msg);
 }
 
 static void infoHandler(const char* module, const char* function, char* msg, void* user_data) {
-    KinsolContext* context = (KinsolContext*) user_data;
+    auto* context = (KinsolContext*) user_data;
     context->logInfo(module, function, msg);
 }
 
