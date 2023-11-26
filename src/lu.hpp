@@ -8,6 +8,9 @@
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
+#ifndef LU_HPP
+#define LU_HPP
+
 namespace powsybl {
 
 namespace jni {
@@ -26,3 +29,5 @@ private:
 }  // namespace jni
 
 }  // namespace powsybl
+
+#endif // LU_HPP
