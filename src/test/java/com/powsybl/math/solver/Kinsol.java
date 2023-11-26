@@ -14,5 +14,6 @@ import com.powsybl.math.AbstractMathNative;
 public class Kinsol extends AbstractMathNative {
 
     public native KinsolResult solve(double[] x, int[] ap, int[] ai, double[] ax, KinsolContext context,
-                                     boolean transpose, int maxIterations, boolean lineSearch, int printLevel);
+                                     boolean transpose, int maxIters, int msbset, int msbsetsub, double fnormtol,
+                                     double scsteptol, boolean lineSearch, int printLevel);
 }

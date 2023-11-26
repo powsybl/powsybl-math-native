@@ -26,10 +26,14 @@ class KinsolTest {
         int[] ai = new int[] {0, 1, 0, 1};
         double[] ax = new double[4];
         Kinsol solver = new Kinsol();
-        int maxIterations = 15;
+        int maxIters = 200;
+        int msbset = 0; // default value
+        int msbsetsub = 0; // default value
+        double fnormtol = 0; // default value
+        double scsteptol = 0; // default value
         boolean lineSearch = false;
         int printLevel = 2;
-        KinsolResult result = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), false, maxIterations, lineSearch, printLevel);
+        KinsolResult result = solver.solve(x, ap, ai, ax, new KinsolContext(x, ax), false, maxIters, msbset, msbsetsub, fnormtol, scsteptol, lineSearch, printLevel);
         assertEquals(0, result.getStatus());
         assertEquals(9, result.getIterations());
         assertArrayEquals(new double[] {0.855419, -0.235959}, x, 1e-6);

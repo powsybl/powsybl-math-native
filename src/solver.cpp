@@ -192,7 +192,8 @@ SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jin
 }
 
 void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::KinsolContext& context,
-           int maxIterations, bool lineSearch, int printLevel, int& status, long& iterations) {
+           int maxIters, int msbset, int msbsetsub, double fnormtol, double scsteptol, bool lineSearch, int printLevel,
+           int& status, long& iterations) {
     int n = xd.size();
     N_Vector x = N_VMake_Serial(n, xd.data(), sunCtx);
 
@@ -241,15 +242,30 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::K
         throw std::runtime_error("KINSetUserData error " + std::to_string(error));
     }
 
-    error = KINSetNumMaxIters(kinMem, maxIterations);
+    error = KINSetNumMaxIters(kinMem, maxIters);
     if (error != KIN_SUCCESS) {
         throw std::runtime_error("KINSetNumMaxIters error " + std::to_string(error));
     }
-//
-//    error = KINSetMaxSetupCalls(kinMem, 1);
-//    if (error != KIN_SUCCESS) {
-//        throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
-//    }
+
+    error = KINSetMaxSetupCalls(kinMem, msbset);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetMaxSetupCalls error " + std::to_string(error));
+    }
+
+    error = KINSetMaxSubSetupCalls(kinMem, msbsetsub);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetMaxSubSetupCalls error " + std::to_string(error));
+    }
+
+    error = KINSetFuncNormTol(kinMem, fnormtol);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetFuncNormTol error " + std::to_string(error));
+    }
+
+    error = KINSetScaledStepTol(kinMem, scsteptol);
+    if (error != KIN_SUCCESS) {
+        throw std::runtime_error("KINSetScaledStepTol error " + std::to_string(error));
+    }
 
     N_Vector scale = N_VNew_Serial(n, sunCtx);
     N_VConst(1, scale); // no scale
@@ -279,7 +295,8 @@ extern "C" {
 
 JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
                                                                     jintArray jai, jdoubleArray jax, jobject jContext,
-                                                                    jboolean transpose, jint maxIterations, jboolean lineSearch,
+                                                                    jboolean transpose, jint maxIters, jint msbset, jint msbsetsub,
+                                                                    jdouble fnormtol, jdouble scsteptol, jboolean lineSearch,
                                                                     jint printLevel) {
     try {
         SUNContext sunCtx;
@@ -295,7 +312,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
         powsybl::KinsolContext context(env, jContext, jx, jap, jai, jax);
         int status;
         long iterations = 0;
-        powsybl::solve(sunCtx, x, j, context, maxIterations, lineSearch, printLevel, status, iterations);
+        powsybl::solve(sunCtx, x, j, context, maxIters, msbset, msbsetsub, fnormtol, scsteptol, lineSearch, printLevel, status, iterations);
 
         SUNMatDestroy(j);
 
