@@ -176,6 +176,7 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
     context->logInfo(module, function, msg);
 }
 
+// RAII for SUNContext
 class SunContext {
 public:
     SunContext() {
@@ -199,6 +200,7 @@ private:
     SUNContext sunCtx; // this is a pointer (see the typedef in sundials code)
 };
 
+// RAII for SUNMatrix
 class SunMatrix {
 public:
     SunMatrix(SUNMatrix m)
@@ -216,6 +218,7 @@ private:
     SUNMatrix _m; // this is a pointer (see the typedef in sundials code)
 };
 
+// RAII for serial implementation of N_Vector
 class NVectorSerial {
 public:
     NVectorSerial(int length, double* ptr, SunContext& sunCtx)
@@ -236,6 +239,51 @@ public:
     }
 private:
     N_Vector _v; // this is a pointer (see the typedef in sundials code)
+};
+
+// RAII for Kinsol memory management
+class KinMem {
+public:
+    KinMem(SunContext& sunCtx)
+        : _kinMem(KINCreate(sunCtx)) {
+        if (!_kinMem) {
+            throw std::runtime_error("KINCreate error");
+        }
+    }
+
+    operator void*() {
+        return _kinMem;
+    }
+
+    ~KinMem() {
+        KINFree(&_kinMem);
+    }
+private:
+    void* _kinMem;
+};
+
+// RAII for Kinsol KLU linear solver
+class KluLinearSolver {
+public:
+    KluLinearSolver(NVectorSerial& x, SunMatrix& j, SunContext& sunCtx)
+        : _solver(SUNLinSol_KLU(x, j, sunCtx)) {
+        if (!_solver) {
+            throw std::runtime_error("SUNLinSol_KLU error");
+        }
+    }
+
+    operator SUNLinearSolver() {
+        return _solver;
+    }
+
+    ~KluLinearSolver() {
+        int error = SUNLinSolFree_KLU(_solver);
+        if (error != 0) {
+            std::cerr << "SUNLinSolFree_KLU error " << error << std::endl;
+        }
+    }
+private:
+    SUNLinearSolver _solver; // this is a pointer (see the typedef in sundials code
 };
 
 SunMatrix createSparseMatrix(SunContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax,
@@ -262,15 +310,9 @@ void solve(SunContext& sunCtx, std::vector<double>& xd, SunMatrix& j, powsybl::K
     int n = xd.size();
     NVectorSerial x(n, xd.data(), sunCtx);
 
-    SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
-    if (!ls) {
-        throw std::runtime_error("SUNLinSol_KLU error");
-    }
+    KluLinearSolver ls(x, j, sunCtx);
 
-    void* kinMem = KINCreate(sunCtx);
-    if (!kinMem) {
-        throw std::runtime_error("KINCreate error");
-    }
+    KinMem kinMem(sunCtx);
 
     int error = KINInit(kinMem, powsybl::evalFunc, x);
     if (error != KIN_SUCCESS) {
@@ -339,13 +381,6 @@ void solve(SunContext& sunCtx, std::vector<double>& xd, SunMatrix& j, powsybl::K
     error = KINGetNumNonlinSolvIters(kinMem, &iterations);
     if (error != KINLS_SUCCESS) {
         throw std::runtime_error("KINGetNumLinIters error " + std::to_string(error));
-    }
-
-    KINFree(&kinMem);
-
-    error = SUNLinSolFree_KLU(ls);
-    if (error != 0) {
-        throw std::runtime_error("SUNLinSolFree_KLU error " + std::to_string(error));
     }
 }
 
