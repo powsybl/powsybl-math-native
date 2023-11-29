@@ -176,7 +176,69 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
     context->logInfo(module, function, msg);
 }
 
-SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax,
+class SunContext {
+public:
+    SunContext() {
+        int error = SUNContext_Create(nullptr, &sunCtx);
+        if (error != 0) {
+            throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
+        }
+    }
+
+    operator SUNContext() {
+        return sunCtx;
+    }
+
+    ~SunContext() {
+        int error = SUNContext_Free(&sunCtx);
+        if (error != 0) { // never throw an exception in a destructor
+            std::cerr << "SUNContext_Free error " << error << std::endl;
+        }
+    }
+private:
+    SUNContext sunCtx; // this is a pointer (see the typedef in sundials code)
+};
+
+class SunMatrix {
+public:
+    SunMatrix(SUNMatrix m)
+        : _m(m) {
+    }
+
+    operator SUNMatrix() {
+        return _m;
+    }
+
+    ~SunMatrix() {
+        SUNMatDestroy(_m);
+    }
+private:
+    SUNMatrix _m; // this is a pointer (see the typedef in sundials code)
+};
+
+class NVectorSerial {
+public:
+    NVectorSerial(int length, double* ptr, SunContext& sunCtx)
+        : _v(N_VMake_Serial(length, ptr, sunCtx)) {
+    }
+
+    NVectorSerial(int length, double initialValue, SunContext& sunCtx)
+        : _v(N_VNew_Serial(length, sunCtx)) {
+        N_VConst(initialValue, _v);
+    }
+
+    operator N_Vector() {
+        return _v;
+    }
+
+    ~NVectorSerial() {
+        N_VDestroy_Serial(_v);
+    }
+private:
+    N_Vector _v; // this is a pointer (see the typedef in sundials code)
+};
+
+SunMatrix createSparseMatrix(SunContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax,
                              bool transpose) {
     jni::IntArray ap(env, jap);
     jni::IntArray ai(env, jai);
@@ -191,14 +253,14 @@ SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jin
     std::memcpy(apPtr, ap.get(), ap.length() * sizeof(int));
     std::memcpy(aiPtr, ai.get(), ai.length() * sizeof(int));
     std::memcpy(axPtr, ax.get(), ax.length() * sizeof(double));
-    return j;
+    return SunMatrix(j);
 }
 
-void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::KinsolContext& context,
+void solve(SunContext& sunCtx, std::vector<double>& xd, SunMatrix& j, powsybl::KinsolContext& context,
            int maxIters, int msbset, int msbsetsub, double fnormtol, double scsteptol, bool lineSearch, int printLevel,
            int& status, long& iterations) {
     int n = xd.size();
-    N_Vector x = N_VMake_Serial(n, xd.data(), sunCtx);
+    NVectorSerial x(n, xd.data(), sunCtx);
 
     SUNLinearSolver ls = SUNLinSol_KLU(x, j, sunCtx);
     if (!ls) {
@@ -270,8 +332,7 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::K
         throw std::runtime_error("KINSetScaledStepTol error " + std::to_string(error));
     }
 
-    N_Vector scale = N_VNew_Serial(n, sunCtx);
-    N_VConst(1, scale); // no scale
+    NVectorSerial scale(n, 1, sunCtx); // no scale
 
     status = KINSol(kinMem, x, lineSearch ? KIN_LINESEARCH : KIN_NONE, scale, scale);
 
@@ -286,8 +347,6 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::K
     if (error != 0) {
         throw std::runtime_error("SUNLinSolFree_KLU error " + std::to_string(error));
     }
-
-    N_VDestroy_Serial(x);
 }
 
 }
@@ -304,17 +363,13 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
                                                                     jint maxIters, jint msbset, jint msbsetsub, jdouble fnormtol, jdouble scsteptol, jboolean lineSearch, // solver parameters
                                                                     jint printLevel) {
     try {
-        SUNContext sunCtx;
-        int error = SUNContext_Create(nullptr, &sunCtx);
-        if (error != 0) {
-            throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
-        }
+        powsybl::SunContext sunCtx;
 
         // we need to copy x array to release it on java side
         std::vector<double> x = powsybl::jni::createDoubleVector(env, jx);
 
         // j is created by copying the 3 arrays
-        SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax, transpose);
+        powsybl::SunMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax, transpose);
 
         // run solver
         powsybl::KinsolContext context(env, jContext, jx, jap, jai, jax);
@@ -322,15 +377,8 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
         long iterations = 0;
         powsybl::solve(sunCtx, x, j, context, maxIters, msbset, msbsetsub, fnormtol, scsteptol, lineSearch, printLevel, status, iterations);
 
-        SUNMatDestroy(j);
-
         // x now contains the solution, we need to update it back on Java side
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
-
-        error = SUNContext_Free(&sunCtx);
-        if (error != 0) {
-            throw std::runtime_error("SUNContext_Free error " + std::to_string(error));
-        }
 
         return powsybl::jni::ComPowsyblMathSolverKinsolResult(env, status, iterations).obj();
     } catch (const std::exception& e) {
