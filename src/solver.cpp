@@ -59,39 +59,39 @@ void ComPowsyblMathSolverKinsolContext::logInfo(const std::string& module, const
                          _env->NewStringUTF(message.c_str()));
 }
 
-void ComPowsyblMathSolverKinsolContext::updateFunc(double* x, double* f, int n, jdoubleArray jx) {
-    // update x on Java side
+void ComPowsyblMathSolverKinsolContext::updateFunc(double* xPtr, double* fPtr, int n, jdoubleArray jx) {
+    // update x on Java side in a block to release it on Java side immediately
     {
-        DoubleArray xda(_env, jx);
-        std::memcpy(xda.get(), x, n * sizeof(double));
+        DoubleArray x(_env, jx);
+        std::memcpy(x.get(), xPtr, n * sizeof(double));
     }
 
-    // call Java side update function callback
-    DoubleArray fda(_env, n);
-    _env->CallVoidMethod(_obj, _updateFunc, fda.obj());
+    // call Java side update function callback so that f is updated on Java side
+    DoubleArray f(_env, n);
+    _env->CallVoidMethod(_obj, _updateFunc, f.obj());
 
     // update f on C side
-    std::memcpy(f, fda.get(), n * sizeof(double));
+    std::memcpy(fPtr, f.get(), n * sizeof(double));
 }
 
-void ComPowsyblMathSolverKinsolContext::updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz,
+void ComPowsyblMathSolverKinsolContext::updateJac(double* xPtr, int n, int* apPtr, int* aiPtr, double* axPtr, int nnz,
                                                   jdoubleArray jx, jintArray jap, jintArray jai, jdoubleArray jax) {
-    // update x on Java side
+    // update x on Java side in a block to release it on Java side immediately
     {
-        DoubleArray xda(_env, jx);
-        std::memcpy(xda.get(), x, n * sizeof(double));
+        DoubleArray x(_env, jx);
+        std::memcpy(x.get(), xPtr, n * sizeof(double));
     }
 
-    // call Java side update function callback
+    // call Java side update function callback so that jap, jai and jax are updated on Java side
     _env->CallVoidMethod(_obj, _updateJac);
 
-    // update ax on C side
-    IntArray apia(_env, jap);
-    IntArray aiia(_env, jai);
-    DoubleArray axda(_env, jax);
-    std::memcpy(ap, apia.get(), apia.length() * sizeof(int));
-    std::memcpy(ai, aiia.get(), aiia.length() * sizeof(int));
-    std::memcpy(ax, axda.get(), axda.length() * sizeof(double));
+    // update ap, ai, ax on C side
+    IntArray ap(_env, jap);
+    IntArray ai(_env, jai);
+    DoubleArray ax(_env, jax);
+    std::memcpy(apPtr, ap.get(), ap.length() * sizeof(int));
+    std::memcpy(aiPtr, ai.get(), ai.length() * sizeof(int));
+    std::memcpy(axPtr, ax.get(), ax.length() * sizeof(double));
 }
 
 jclass ComPowsyblMathSolverKinsolResult::_cls = nullptr;
@@ -127,12 +127,12 @@ public:
         _delegate.logInfo(module, function, message);
     }
 
-    void updateFunc(double* x, double* f, int n) {
-        _delegate.updateFunc(x, f, n, _jx);
+    void updateFunc(double* xPtr, double* fPtr, int n) {
+        _delegate.updateFunc(xPtr, fPtr, n, _jx);
     }
 
-    void updateJac(double* x, int n, int* ap, int* ai, double* ax, int nnz) {
-        _delegate.updateJac(x, n, ap, ai, ax, nnz, _jx, _jap, _jai, _jax);
+    void updateJac(double* xPtr, int n, int* apPtr, int* aiPtr, double* axPtr, int nnz) {
+        _delegate.updateJac(xPtr, n, apPtr, aiPtr, axPtr, nnz, _jx, _jap, _jai, _jax);
     }
 
 private:
@@ -145,22 +145,24 @@ private:
 
 static int evalFunc(N_Vector x, N_Vector f, void* user_data) {
     auto* context = (KinsolContext*) user_data;
-    double* xd = N_VGetArrayPointer(x);
-    double* fd = N_VGetArrayPointer(f);
+    double* xPtr = N_VGetArrayPointer(x);
+    double* fPtr = N_VGetArrayPointer(f);
     int n = NV_LENGTH_S(x);
-    context->updateFunc(xd, fd, n);
+    // we do not wrap x pointer to a std::vector to avoid extra copy
+    context->updateFunc(xPtr, fPtr, n);
     return 0;
 }
 
 static int evalJac(N_Vector x, N_Vector f, SUNMatrix j, void* user_data, N_Vector tmp1, N_Vector tmp2) {
     auto* context = (KinsolContext*) user_data;
-    double* xd = N_VGetArrayPointer(x);
+    double* xPtr = N_VGetArrayPointer(x);
     int n = NV_LENGTH_S(x);
-    double* ax = SUNSparseMatrix_Data(j);
-    int* ap = SUNSparseMatrix_IndexPointers(j);
-    int* ai = SUNSparseMatrix_IndexValues(j);
+    double* axPtr = SUNSparseMatrix_Data(j);
+    int* apPtr = SUNSparseMatrix_IndexPointers(j);
+    int* aiPtr = SUNSparseMatrix_IndexValues(j);
     int nnz = SM_NNZ_S(j);
-    context->updateJac(xd, n, ap, ai, ax, nnz);
+    // we do not wrap any of theses pointers to a std::vector to avoid extra copy
+    context->updateJac(xPtr, n, apPtr, aiPtr, axPtr, nnz);
     return 0;
 }
 
@@ -176,18 +178,19 @@ static void infoHandler(const char* module, const char* function, char* msg, voi
 
 SUNMatrix createSparseMatrix(SUNContext& sunCtx, JNIEnv* env, jintArray jap, jintArray jai, jdoubleArray jax,
                              bool transpose) {
-    jni::IntArray apia(env, jap);
-    jni::IntArray aiia(env, jai);
-    jni::DoubleArray axda(env, jax);
-    int n = apia.length() - 1;
-    int nnz = aiia.length();
+    jni::IntArray ap(env, jap);
+    jni::IntArray ai(env, jai);
+    jni::DoubleArray ax(env, jax);
+    int n = ap.length() - 1; // ap array has the size of the matrix + 1
+    int nnz = ai.length();
     SUNMatrix j = SUNSparseMatrix(n, n, nnz, transpose ? CSR_MAT : CSC_MAT, sunCtx);
-    int* ap = SUNSparseMatrix_IndexPointers(j);
-    int* ai = SUNSparseMatrix_IndexValues(j);
-    double* ax = SUNSparseMatrix_Data(j);
-    std::memcpy(ap, apia.get(), apia.length() * sizeof(int));
-    std::memcpy(ai, aiia.get(), aiia.length() * sizeof(int));
-    std::memcpy(ax, axda.get(), axda.length() * sizeof(double));
+    int* apPtr = SUNSparseMatrix_IndexPointers(j);
+    int* aiPtr = SUNSparseMatrix_IndexValues(j);
+    double* axPtr = SUNSparseMatrix_Data(j);
+    // we need to copy sparse matrix arrays to be able to release it on Java side
+    std::memcpy(apPtr, ap.get(), ap.length() * sizeof(int));
+    std::memcpy(aiPtr, ai.get(), ai.length() * sizeof(int));
+    std::memcpy(axPtr, ax.get(), ax.length() * sizeof(double));
     return j;
 }
 
@@ -293,10 +296,12 @@ void solve(SUNContext& sunCtx, std::vector<double>& xd, SUNMatrix& j, powsybl::K
 extern "C" {
 #endif
 
-JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject, jdoubleArray jx, jintArray jap,
-                                                                    jintArray jai, jdoubleArray jax, jobject jContext,
-                                                                    jboolean transpose, jint maxIters, jint msbset, jint msbsetsub,
-                                                                    jdouble fnormtol, jdouble scsteptol, jboolean lineSearch,
+JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env, jobject,
+                                                                    jdoubleArray jx, // state array
+                                                                    jintArray jap, jintArray jai, jdoubleArray jax, // jacobian matrix
+                                                                    jobject jContext, // Java context
+                                                                    jboolean transpose, // to define if we resolve J.X=0  or J.Xt=0
+                                                                    jint maxIters, jint msbset, jint msbsetsub, jdouble fnormtol, jdouble scsteptol, jboolean lineSearch, // solver parameters
                                                                     jint printLevel) {
     try {
         SUNContext sunCtx;
@@ -305,7 +310,10 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
             throw std::runtime_error("SUNContext_Create error " + std::to_string(error));
         }
 
+        // we need to copy x array to release it on java side
         std::vector<double> x = powsybl::jni::createDoubleVector(env, jx);
+
+        // j is created by copying the 3 arrays
         SUNMatrix j = powsybl::createSparseMatrix(sunCtx, env, jap, jai, jax, transpose);
 
         // run solver
@@ -316,6 +324,7 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_solver_Kinsol_solve(JNIEnv* env,
 
         SUNMatDestroy(j);
 
+        // x now contains the solution, we need to update it back on Java side
         powsybl::jni::updateJavaDoubleArray(env, jx, x);
 
         error = SUNContext_Free(&sunCtx);
