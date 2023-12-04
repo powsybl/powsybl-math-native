@@ -37,7 +37,7 @@ public class KinsolContext {
 
     public void updateFunc(double[] f) {
         // 0 = 0.02 + v2 * 0.1 * sin(ph2)
-        // 0 = 0.01 + v2 * 0.1 (-cos(ph2) + v2)
+        // 0 = 0.01 + v2 * 0.1 * (-cos(ph2) + v2)
         double v2 = x[0];
         double ph2 = x[1];
         f[0] = 0.02 + v2 * 0.1 * Math.sin(ph2);
