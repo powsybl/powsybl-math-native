@@ -8,15 +8,39 @@
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
 
+#include <cstring>
 #include "jniwrapper.hpp"
 
 namespace powsybl {
 
 namespace jni {
 
-void throwMatrixException(JNIEnv* env, const char* msg) {
-    jclass clazz = env->FindClass("com/powsybl/math/matrix/MatrixException");
+void throwException(JNIEnv* env, const char* msg, const std::string& className) {
+    jclass clazz = env->FindClass(className.c_str());
     env->ThrowNew(clazz, msg);
+}
+
+void throwMathException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/MathException");
+}
+
+void throwMatrixException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/matrix/MatrixException");
+}
+
+void throwKinsolException(JNIEnv* env, const char* msg) {
+    throwException(env, msg, "com/powsybl/math/solver/KinsolException");
+}
+
+std::vector<double> createDoubleVector(JNIEnv* env, jdoubleArray jda) {
+    DoubleArray da(env, jda);
+    double* ptr = da.get();
+    return std::vector<double>(ptr, ptr + da.length());
+}
+
+void updateJavaDoubleArray(JNIEnv* env, jdoubleArray ja, const std::vector<double>& v) {
+    DoubleArray a(env, ja);
+    std::memcpy(a.get(), v.data(), v.size() * sizeof(double));
 }
 
 }  // namespace jni

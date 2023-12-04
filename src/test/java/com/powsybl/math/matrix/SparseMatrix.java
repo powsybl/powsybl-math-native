@@ -6,26 +6,12 @@
  */
 package com.powsybl.math.matrix;
 
-import org.scijava.nativelib.NativeLoader;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import com.powsybl.math.AbstractMathNative;
 
 /**
  * @author Geoffroy Jamgotchian {@literal <geoffroy.jamgotchian at rte-france.com>}
  */
-public class SparseMatrix {
-
-    private static native void nativeInit();
-
-    static {
-        try {
-            NativeLoader.loadLibrary("math");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        nativeInit();
-    }
+public class SparseMatrix extends AbstractMathNative {
 
     public SparseMatrix(int rowCount, int columnCount, int[] columnStart, int[] rowIndices, double[] values) {
     }

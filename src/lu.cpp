@@ -16,21 +16,11 @@
 #include <klu.h>
 #include <cs.h>
 #include "jniwrapper.hpp"
+#include "lu.hpp"
 
 namespace powsybl {
 
 namespace jni {
-
-class ComPowsyblMathMatrixSparseMatrix : public JniWrapper<jobject> {
-public:
-    ComPowsyblMathMatrixSparseMatrix(JNIEnv* env, int m, int n, const IntArray& ap, const IntArray& ai, const DoubleArray& ax);
-
-    static void init(JNIEnv* env);
-
-private:
-    static jclass _cls;
-    static jmethodID _constructor; 
-};
 
 jclass ComPowsyblMathMatrixSparseMatrix::_cls = nullptr;
 jmethodID ComPowsyblMathMatrixSparseMatrix::_constructor = nullptr;
@@ -282,22 +272,6 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2
                 throw std::runtime_error("klu_solve error " + context.error());
             }
         }
-    } catch (const std::exception& e) {
-        powsybl::jni::throwMatrixException(env, e.what());
-    } catch (...) {
-        powsybl::jni::throwMatrixException(env, "Unknown exception");
-    }
-}
-
-/*
- * Class:     com_powsybl_math_matrix_SparseMatrix
- * Method:    nativeInit
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseMatrix_nativeInit(JNIEnv * env, jclass) {
-    try {
-        // lookup caching
-        powsybl::jni::ComPowsyblMathMatrixSparseMatrix::init(env);
     } catch (const std::exception& e) {
         powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {

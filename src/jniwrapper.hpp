@@ -12,6 +12,7 @@
 #define JNIWRAPPER_HPP
 
 #include <string>
+#include <vector>
 #include <jni.h>
 
 namespace powsybl {
@@ -87,10 +88,16 @@ public:
         _ptr(nullptr) {
     }
 
+    IntArray(JNIEnv* env, int length)
+       : IntArray(env, nullptr, length) {
+    }
+
     IntArray(JNIEnv* env, int* ptr, int length) :
         JniWrapper<jintArray>(env, env->NewIntArray(length)),
         _ptr(nullptr) {
-        _env->SetIntArrayRegion(_obj, 0, length, (const jint*) ptr);
+        if (ptr) {
+            _env->SetIntArrayRegion(_obj, 0, length, (const jint*) ptr);
+        }
     }
 
     ~IntArray() override {
@@ -121,10 +128,16 @@ public:
         _ptr(nullptr) {
     }
 
+    DoubleArray(JNIEnv* env, int length) :
+        DoubleArray(env, nullptr, length) {
+    }
+
     DoubleArray(JNIEnv* env, double* ptr, int length) :
         JniWrapper<jdoubleArray>(env, env->NewDoubleArray(length)),
         _ptr(nullptr) {
-        _env->SetDoubleArrayRegion(_obj, 0, length, ptr);
+        if (ptr) {
+            _env->SetDoubleArrayRegion(_obj, 0, length, ptr);
+        }
     }
 
     ~DoubleArray() override {
@@ -148,7 +161,12 @@ private:
     mutable jdouble* _ptr;
 };
 
+void throwMathException(JNIEnv* env, const char* msg);
 void throwMatrixException(JNIEnv* env, const char* msg);
+void throwKinsolException(JNIEnv* env, const char* msg);
+
+std::vector<double> createDoubleVector(JNIEnv* env, jdoubleArray jda);
+void updateJavaDoubleArray(JNIEnv* env, jdoubleArray ja, const std::vector<double>& v);
 
 }  // namespace jni
 
