@@ -50,10 +50,10 @@ list(APPEND CMAKE_MODULE_PATH ${sundials_SOURCE_DIR}/cmake)
 add_library(SUNDIALS::KLU ALIAS KLU_static)
 
 set(SOURCES
-    src/jniwrapper.cpp
-    src/native.cpp
-    src/lu.cpp
-    src/solver.cpp
+    src/main/cpp/jniwrapper.cpp
+    src/main/cpp/native.cpp
+    src/main/cpp/lu.cpp
+    src/main/cpp/solver.cpp
 )
 add_library(math SHARED ${SOURCES})
 
