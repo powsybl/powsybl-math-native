@@ -85,6 +85,11 @@
                         <artifactId>build-helper-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                              <!-- To be removed when parent is released https://github.com/powsybl/powsybl-parent/pull/50 -->
+                              <id>attach-artifact</id>
+                              <phase>none</phase>
+                            </execution>
+                            <execution>
                                 <id>add-cpp-source</id>
                                 <phase>generate-sources</phase>
                                 <goals>
