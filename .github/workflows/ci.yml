@@ -41,13 +41,13 @@ jobs:
           echo /opt/apache-maven-3.9.6/bin >> $GITHUB_PATH
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Configure CMake
         shell: bash
@@ -62,7 +62,7 @@ jobs:
         run: mvn --batch-mode package
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.artifact_name }}
           path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
@@ -74,10 +74,10 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Download Linux library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: libmath.so
           path: target/classes/natives/linux_64/
@@ -89,7 +89,7 @@ jobs:
           path: target/classes/natives/osx_64/
 
       - name: Download Windows library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: math.dll
           path: target/classes/natives/windows_64/
@@ -99,7 +99,7 @@ jobs:
         run: mvn -DskipTests install
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: powsybl-math-native.jar
           path: target/*.jar
