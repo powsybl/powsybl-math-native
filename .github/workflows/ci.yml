@@ -13,8 +13,7 @@ jobs:
           - {
             name: linux,
             os: ubuntu-20.04,
-            container: 'ubuntu:18.04',
-            cmake_options: '-DCMAKE_CXX_COMPILER=/usr/bin/g++-5 -DCMAKE_C_COMPILER=/usr/bin/gcc-5',
+            container: 'quay.io/pypa/manylinux2014_x86_64',
             artifact_name: libmath.so,
             artifact_path: linux_64
           }
@@ -36,26 +35,23 @@ jobs:
       - name: Install pre-requisites
         if: matrix.config.name == 'linux'
         run: |
-          apt update
-          apt-get install -y g++-5 gcc-5 liblapack-dev libblas-dev ca-certificates gnupg software-properties-common wget git maven
-          wget https://apt.kitware.com/keys/kitware-archive-latest.asc
-          apt-key add kitware-archive-latest.asc
-          apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-          apt-get update
-          apt-get install -y cmake
+          yum install -y wget
+          wget https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz -P /tmp
+          tar xf /tmp/apache-maven-*.tar.gz -C /opt
+          echo /opt/apache-maven-3.9.6/bin >> $GITHUB_PATH
 
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
 
       - name: Checkout sources
         uses: actions/checkout@v3
 
       - name: Configure CMake
         shell: bash
-        run: cmake -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_options }} -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build
+        run: cmake -DCMAKE_BUILD_TYPE=Release -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build
 
       - name: Build
         shell: bash
