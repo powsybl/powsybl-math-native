@@ -21,9 +21,15 @@ jobs:
           }
           - {
             name: macos,
-            os: macos-14, # minimal version to get an ARM64 runner
+            os: macos-11,
             artifact_name: libmath.dylib,
             artifact_path: osx_64
+          }
+          - {
+            name: macos_arm64,
+            os: macos-14, # minimal version to get an ARM64 runner
+            artifact_name: libmath.dylib,
+            artifact_path: osx_arm64
           }
           - {
             name: windows,
@@ -85,6 +91,12 @@ jobs:
           path: target/classes/natives/linux_64/
 
       - name: Download MacOS library
+        uses: actions/download-artifact@v3
+        with:
+          name: libmath.dylib
+          path: target/classes/natives/osx_64/
+
+      - name: Download MacOS ARM64 library
         uses: actions/download-artifact@v3
         with:
           name: libmath.dylib
