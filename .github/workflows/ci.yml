@@ -7,6 +7,8 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     container: ${{ matrix.config.container }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0" # to get MacOS >= 11 compatibility
     strategy:
       matrix:
         config:
@@ -19,7 +21,7 @@ jobs:
           }
           - {
             name: macos,
-            os: macos-11,
+            os: macos-14, # minimal version to get an ARM64 runner
             artifact_name: libmath.dylib,
             artifact_path: osx_64
           }
