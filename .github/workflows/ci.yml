@@ -88,7 +88,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: libmath.dylib
-          path: target/classes/natives/osx_64/
+          path: target/classes/natives/osx_arm64/
 
       - name: Download Windows library
         uses: actions/download-artifact@v3
