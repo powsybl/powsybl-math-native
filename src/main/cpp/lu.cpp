@@ -192,6 +192,7 @@ JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_upd
     } catch (...) {
         powsybl::jni::throwMatrixException(env, "Unknown exception");
     }
+    return 0;
 }
 
 /*
