@@ -7,6 +7,8 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     container: ${{ matrix.config.container }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0" # to get MacOS >= 11 compatibility
     strategy:
       matrix:
         config:
@@ -15,18 +17,28 @@ jobs:
             os: ubuntu-20.04,
             container: 'quay.io/pypa/manylinux2014_x86_64',
             artifact_name: libmath.so,
+            upload_name: libmath.so,
             artifact_path: linux_64
           }
           - {
             name: macos,
             os: macos-11,
             artifact_name: libmath.dylib,
+            upload_name: libmath.dylib,
             artifact_path: osx_64
+          }
+          - {
+            name: macos_arm64,
+            os: macos-14, # minimal version to get an ARM64 runner
+            artifact_name: libmath.dylib,
+            upload_name: libmath_arm64.dylib,
+            artifact_path: osx_arm64
           }
           - {
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
+            upload_name: math.dll,
             artifact_path: windows_64
           }
 
@@ -64,7 +76,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config.artifact_name }}
+          name: ${{ matrix.config.upload_name }}
           path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
 
   package:
@@ -87,6 +99,12 @@ jobs:
         with:
           name: libmath.dylib
           path: target/classes/natives/osx_64/
+
+      - name: Download MacOS ARM64 library
+        uses: actions/download-artifact@v3
+        with:
+          name: libmath_arm64.dylib
+          path: target/classes/natives/osx_arm64/
 
       - name: Download Windows library
         uses: actions/download-artifact@v3
