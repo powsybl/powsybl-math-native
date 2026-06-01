@@ -2,6 +2,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# SPDX-License-Identifier: MPL-2.0
 
 cmake_minimum_required(VERSION 3.18.0)
 
@@ -50,6 +51,8 @@ list(APPEND CMAKE_MODULE_PATH ${sundials_SOURCE_DIR}/cmake)
 add_library(SUNDIALS::KLU ALIAS KLU_static)
 
 set(SOURCES
+    src/main/cpp/gaussnewton.cpp
+    src/main/cpp/gaussnewton_common.cpp
     src/main/cpp/jniwrapper.cpp
     src/main/cpp/native.cpp
     src/main/cpp/lu.cpp
@@ -91,6 +94,7 @@ target_link_libraries(math
     PUBLIC
     SuiteSparse::KLU_static
     SuiteSparse::CXSparse_static
+    SuiteSparse::CHOLMOD_static
     sundials_kinsol_static
     sundials_sunlinsolklu_static
 )

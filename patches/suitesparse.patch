@@ -1,14 +1,106 @@
-diff -ruN SuiteSparse-7.3.1/CMakeLists.txt SuiteSparse-7.3.1.patched/CMakeLists.txt
+Patches SuiteSparse 7.3.1 for the powsybl-math-native build.
+
+Three things are done here, all for the same underlying reason - SuiteSparse is
+built as a nested FetchContent sub-project rather than standalone:
+
+1. CHOLMOD/CMakeLists.txt: comment out the NCHECK / NMATRIXOPS / NCHOLESKY /
+   NMODIFY "module existence" guards.
+
+   Each guard reads `if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/<Module> )` and
+   disables the module when the directory is absent. CMAKE_SOURCE_DIR is the
+   *top-level* source dir, which here is the powsybl-math-native root, not
+   CHOLMOD's own directory - so those paths never exist and every guard
+   misfires, silently compiling out modules we need (Cholesky above all).
+   Commenting them out lets the NCHECK/... options keep their real defaults.
+   Upstream would use CMAKE_CURRENT_SOURCE_DIR; we do not touch the guard for
+   Supernodal, which we *do* want disabled - see 2.
+
+2. A top-level CMakeLists.txt is added (it does not exist in the tarball, which
+   expects each module to be built separately). It pulls in only the modules we
+   need, and force-disables CHOLMOD's Supernodal module: Supernodal is the only
+   component requiring BLAS/LAPACK, and the Gauss-Newton solver uses the
+   BLAS-free simplicial factorization instead. This keeps the build portable,
+   notably on Windows where BLAS is painful to provide.
+
+3. SuiteSparse_config/CMakeLists.txt: skip the BLAS/LAPACK detection entirely,
+   for the same reason as 2 - none of the modules we build (amd, colamd, btf,
+   klu, cxsparse, and CHOLMOD minus Supernodal) link against it.
+
+diff --color -ruN -x .idea -x cmake-build-debug SuiteSparse-7.3.1/CHOLMOD/CMakeLists.txt SuiteSparse-7.3.1.patched/CHOLMOD/CMakeLists.txt
+--- SuiteSparse-7.3.1/CHOLMOD/CMakeLists.txt	2023-11-03 23:42:14.000000000 +0100
++++ SuiteSparse-7.3.1.patched/CHOLMOD/CMakeLists.txt	2026-02-16 14:47:25.726189383 +0100
+@@ -124,10 +124,10 @@
+ 
+     option ( NCHECK "ON: do not use Check Module.  OFF (default): use Check Module" off )
+ 
+-    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/Check )
+-        # Check module does not appear so don't use it
+-        set ( NCHECK true )
+-    endif ( )
++#    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/Check )
++#        # Check module does not appear so don't use it
++#        set ( NCHECK true )
++#    endif ( )
+     if ( NCHECK )
+         # if NCHECK is true: do not build the Check module
+         add_compile_definitions ( NCHECK )
+@@ -139,10 +139,10 @@
+ 
+     option ( NMATRIXOPS "ON: do not use MatrixOps Module.  OFF (default): use MatrixOps Module" off )
+ 
+-    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/MatrixOps )
+-        # MatrixOps module does not appear so don't use it
+-        set ( NMATRIXOPS true )
+-    endif ( )
++#    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/MatrixOps )
++#        # MatrixOps module does not appear so don't use it
++#        set ( NMATRIXOPS true )
++#    endif ( )
+     if ( NMATRIXOPS )
+         # if NMATRIXOPS is true: do not build the Check module
+         add_compile_definitions ( NMATRIXOPS )
+@@ -154,10 +154,10 @@
+ 
+     option ( NCHOLESKY "ON: do not use Cholesky Module.  OFF (default): use Cholesky Module" off )
+ 
+-    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/Cholesky )
+-        # Cholesky module does not appear so don't use it
+-        set ( NCHOLESKY true )
+-    endif ( )
++#    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/Cholesky )
++#        # Cholesky module does not appear so don't use it
++#        set ( NCHOLESKY true )
++#    endif ( )
+     if ( NCHOLESKY )
+         # if NCHOLESKY is true: do not build the Cholesky module, and do not
+         # build the Supernodal or Modify modules that depend on it.
+@@ -172,10 +172,10 @@
+ 
+     option ( NMODIFY "ON: do not use Modify Module.  OFF (default): use Modify Module" off )
+ 
+-    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/Modify )
+-        # Modify module does not appear so don't use it
+-        set ( NMODIFY true )
+-    endif ( )
++#    if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/Modify )
++#        # Modify module does not appear so don't use it
++#        set ( NMODIFY true )
++#    endif ( )
+     if ( NMODIFY )
+         # if NMODIFY is true: do not build the Modify module
+         add_compile_definitions ( NMODIFY )
+diff --color -ruN -x .idea -x cmake-build-debug SuiteSparse-7.3.1/CMakeLists.txt SuiteSparse-7.3.1.patched/CMakeLists.txt
 --- SuiteSparse-7.3.1/CMakeLists.txt	1970-01-01 01:00:00.000000000 +0100
-+++ SuiteSparse-7.3.1.patched/CMakeLists.txt	2023-11-20 10:35:03.770174365 +0100
-@@ -0,0 +1,33 @@
++++ SuiteSparse-7.3.1.patched/CMakeLists.txt	2026-02-16 13:57:03.619447476 +0100
+@@ -0,0 +1,43 @@
 +cmake_minimum_required(VERSION 3.20)
 +project(SparseSuite)
 +
 +list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/SuiteSparse_config/cmake_modules")
 +
-+# avoid blas check as it is hard to compile on windows
-+# and that we don't need it for the suitesparse modules we need (amd, colamd, btf, klu and cxsparse)
++# Skip the BLAS/LAPACK detection: it is hard to satisfy on Windows and none of
++# the SuiteSparse modules we build need it (amd, colamd, btf, klu, cxsparse and
++# CHOLMOD without its Supernodal module - see the NSUPERNODAL setting below).
 +set ( SuiteSparse_BLAS_integer "int32_t" )
 +set ( BLAS_FOUND true )
 +
@@ -35,17 +127,25 @@ diff -ruN SuiteSparse-7.3.1/CMakeLists.txt SuiteSparse-7.3.1.patched/CMakeLists.
 +add_subdirectory(CXSparse)
 +add_library(SuiteSparse::CXSparse ALIAS CXSparse)
 +add_library(SuiteSparse::CXSparse_static ALIAS CXSparse_static)
-\ Pas de fin de ligne à la fin du fichier
-diff -ruN SuiteSparse-7.3.1/SuiteSparse_config/CMakeLists.txt SuiteSparse-7.3.1.patched/SuiteSparse_config/CMakeLists.txt
++
++# Force-disable CHOLMOD's Supernodal module on every platform: it is the only
++# component that needs BLAS/LAPACK. The Gauss-Newton solvers use the BLAS-free
++# simplicial factorization, which keeps the build portable (notably on Windows).
++set ( NSUPERNODAL true CACHE BOOL "Disable CHOLMOD Supernodal (avoids BLAS/LAPACK)" FORCE )
++
++add_subdirectory(CHOLMOD)
++add_library(SuiteSparse::CHOLMOD ALIAS CHOLMOD)
++add_library(SuiteSparse::CHOLMOD_static ALIAS CHOLMOD_static)
+diff --color -ruN -x .idea -x cmake-build-debug SuiteSparse-7.3.1/SuiteSparse_config/CMakeLists.txt SuiteSparse-7.3.1.patched/SuiteSparse_config/CMakeLists.txt
 --- SuiteSparse-7.3.1/SuiteSparse_config/CMakeLists.txt	2023-11-03 23:42:14.000000000 +0100
-+++ SuiteSparse-7.3.1.patched/SuiteSparse_config/CMakeLists.txt	2023-11-20 10:47:59.326178237 +0100
++++ SuiteSparse-7.3.1.patched/SuiteSparse_config/CMakeLists.txt	2026-02-16 13:52:53.862282209 +0100
 @@ -62,7 +62,10 @@
      find_package ( OpenMP )
  endif ( )
  
 -include ( SuiteSparseBLAS )
-+## patch CMakeLists.txt of SuiteSparse_config module to avoid blas check as it is hard to compile on windows
-+## and that we don't need it for the suitesparse modules we need (amd, colamd, btf, klu and cxsparse)
++## Skip the BLAS/LAPACK detection here (hard to satisfy on Windows). None of the
++## modules we build need it: amd, colamd, btf, klu, cxsparse and CHOLMOD without Supernodal.
 +set ( SuiteSparse_BLAS_integer "int32_t" )
 +set ( BLAS_FOUND true )
  
