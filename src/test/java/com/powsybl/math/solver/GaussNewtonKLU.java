@@ -6,10 +6,10 @@ import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Sparse Cholesky decomposition using CHOLMOD for weighted least squares problems.
+ * Sparse LU decomposition using KLU for weighted least squares problems.
  * Used in Gauss-Newton algorithm to solve normal equations: (H'WH)Δx = H'Wr
  */
-public class GaussNewtonCholesky extends AbstractMathNative {
+public class GaussNewtonKLU extends AbstractMathNative {
 
     /**
      * Initialize the decomposition with the normal equations matrix structure.
@@ -25,10 +25,10 @@ public class GaussNewtonCholesky extends AbstractMathNative {
      *
      * @return n if the factorization succeeded (system is full-rank per the
      *         solver's pivot heuristic), or the column index k &lt; n where
-     *         rank-deficiency was first detected. Heuristic: a well-scaled
-     *         near-singular matrix can still report n, and a poorly-scaled
-     *         full-rank matrix can report less. For guaranteed rank, use
-     *         pivoted QR or SVD.
+     *         rank-deficiency was first detected (KLU's common.singular_col).
+     *         Heuristic: a well-scaled near-singular matrix can still report n,
+     *         and a poorly-scaled full-rank matrix can report less. For
+     *         guaranteed rank, use pivoted QR or SVD.
      */
     public native int factorize(String id, int m, int n,
                                 IntBuffer ap, IntBuffer ai, DoubleBuffer ax);
@@ -87,8 +87,7 @@ public class GaussNewtonCholesky extends AbstractMathNative {
      * @param mode {@link #LM_MODE_IDENTITY} (D = I, classic Levenberg) or
      *             {@link #LM_MODE_MARQUARDT} (D = diag(H'WH), scale-invariant).
      * @return n if the damped factor is full rank, otherwise the column where
-     *         rank deficiency was detected (same convention as
-     *         {@link #factorize}).
+     *         rank deficiency was detected (KLU's common.singular_col).
      */
     public native int factorizeLM(String id, int m, int n,
                                   IntBuffer ap, IntBuffer ai, DoubleBuffer ax,

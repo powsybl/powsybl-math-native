@@ -16,6 +16,10 @@ find_package(JNI REQUIRED)
 # compiler options
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Keep SuiteSparse single-threaded: CHOLMOD's OpenMP path adds large per-call
+# sync overhead that dwarfs the parallel speedup for the small/structured
+# matrices typical of Gauss-Newton iterations (verified ~6x regression at
+# n=1000 on banded patterns, even with OMP_NUM_THREADS=1).
 set(NOPENMP true)
 
 set(suitesparse_version "7.3.1")
@@ -51,6 +55,8 @@ add_library(SUNDIALS::KLU ALIAS KLU_static)
 
 set(SOURCES
     src/main/cpp/gaussnewton.cpp
+    src/main/cpp/gaussnewton_common.cpp
+    src/main/cpp/gaussnewton_klu.cpp
     src/main/cpp/jniwrapper.cpp
     src/main/cpp/native.cpp
     src/main/cpp/lu.cpp

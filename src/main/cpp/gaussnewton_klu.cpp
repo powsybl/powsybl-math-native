@@ -1,10 +1,10 @@
 /**
-* Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * @file gaussnewton.cpp
+ * @file gaussnewton_klu.cpp
  * @author Gautier Bureau <gautier.bureau at rte-france.com>
  */
 
@@ -18,7 +18,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstdio>
-#include <cholmod.h>
+#include <klu.h>
 #include "jniwrapper.hpp"
 #include "gaussnewton_common.hpp"
 
@@ -29,42 +29,35 @@ bool profileEnabled() {
 }
 }  // namespace
 
-class GaussNewtonCHOLMODContext {
+// rgrowth threshold below which we fall back to a full klu_factor instead of klu_refactor.
+static constexpr double KLU_RGROWTH_THRESHOLD = 1e-3;
+
+class GaussNewtonKLUContext {
 public:
-    GaussNewtonCHOLMODContext()
-        : symbolic(nullptr), X(nullptr), Y(nullptr), E(nullptr) {
-        cholmod_start(&common);
+    GaussNewtonKLUContext()
+        : symbolic(nullptr), numeric(nullptr) {
+        klu_defaults(&common);
     }
 
-    GaussNewtonCHOLMODContext(const GaussNewtonCHOLMODContext&) = delete;
+    GaussNewtonKLUContext(const GaussNewtonKLUContext&) = delete;
 
-    ~GaussNewtonCHOLMODContext() {
+    ~GaussNewtonKLUContext() {
+        if (numeric) {
+            klu_free_numeric(&numeric, &common);
+        }
         if (symbolic) {
-            cholmod_free_factor(&symbolic, &common);
+            klu_free_symbolic(&symbolic, &common);
         }
-        if (X) {
-            cholmod_free_dense(&X, &common);
-        }
-        if (Y) {
-            cholmod_free_dense(&Y, &common);
-        }
-        if (E) {
-            cholmod_free_dense(&E, &common);
-        }
-        cholmod_finish(&common);
     }
 
-    GaussNewtonCHOLMODContext& operator=(const GaussNewtonCHOLMODContext&) = delete;
+    GaussNewtonKLUContext& operator=(const GaussNewtonKLUContext&) = delete;
 
     std::string error() const;
 
 public:
-    cholmod_common common;
-    cholmod_factor* symbolic;
-    // Workspaces reused across cholmod_solve2 calls (allocated lazily on first solve).
-    cholmod_dense* X;
-    cholmod_dense* Y;
-    cholmod_dense* E;
+    klu_common common;
+    klu_symbolic* symbolic;
+    klu_numeric* numeric;
 
     powsybl::gaussnewton::NormalEquations normalEq;
     std::vector<double> wSq;  // squared weights (length m), precomputed in init
@@ -73,87 +66,79 @@ public:
     int lastRank = -1;
 };
 
-std::string GaussNewtonCHOLMODContext::error() const {
+std::string GaussNewtonKLUContext::error() const {
     switch (common.status) {
-        case CHOLMOD_OK: return "CHOLMOD_OK";
-        case CHOLMOD_NOT_INSTALLED: return "CHOLMOD_NOT_INSTALLED";
-        case CHOLMOD_OUT_OF_MEMORY: return "CHOLMOD_OUT_OF_MEMORY";
-        case CHOLMOD_TOO_LARGE: return "CHOLMOD_TOO_LARGE";
-        case CHOLMOD_INVALID: return "CHOLMOD_INVALID";
-        case CHOLMOD_GPU_PROBLEM: return "CHOLMOD_GPU_PROBLEM";
-        case CHOLMOD_NOT_POSDEF: return "CHOLMOD_NOT_POSDEF";
-        case CHOLMOD_DSMALL: return "CHOLMOD_DSMALL";
-        default: return "Unknown CHOLMOD status: " + std::to_string(common.status);
+        case KLU_OK: return "KLU_OK";
+        case KLU_SINGULAR: return "KLU_SINGULAR";
+        case KLU_OUT_OF_MEMORY: return "KLU_OUT_OF_MEMORY";
+        case KLU_INVALID: return "KLU_INVALID";
+        case KLU_TOO_LARGE: return "KLU_TOO_LARGE";
+        default: return "Unknown KLU status: " + std::to_string(common.status);
     }
 }
 
-class GaussNewtonCHOLMODContextManager {
+class GaussNewtonKLUContextManager {
 public:
-    GaussNewtonCHOLMODContextManager() = default;
+    GaussNewtonKLUContextManager() = default;
 
-    GaussNewtonCHOLMODContextManager(const GaussNewtonCHOLMODContextManager&) = delete;
+    GaussNewtonKLUContextManager(const GaussNewtonKLUContextManager&) = delete;
 
-    ~GaussNewtonCHOLMODContextManager() = default;
+    ~GaussNewtonKLUContextManager() = default;
 
-    GaussNewtonCHOLMODContextManager& operator=(const GaussNewtonCHOLMODContextManager&) = delete;
+    GaussNewtonKLUContextManager& operator=(const GaussNewtonKLUContextManager&) = delete;
 
-    GaussNewtonCHOLMODContext& createContext(const std::string& id);
+    GaussNewtonKLUContext& createContext(const std::string& id);
 
-    GaussNewtonCHOLMODContext& findContext(const std::string& id);
+    GaussNewtonKLUContext& findContext(const std::string& id);
 
     void removeContext(const std::string& id);
 
 private:
-    std::map<std::string, std::unique_ptr<GaussNewtonCHOLMODContext>> _contexts;
+    std::map<std::string, std::unique_ptr<GaussNewtonKLUContext>> _contexts;
     std::mutex _mutex;
 };
 
-GaussNewtonCHOLMODContext& GaussNewtonCHOLMODContextManager::createContext(const std::string& id) {
+GaussNewtonKLUContext& GaussNewtonKLUContextManager::createContext(const std::string& id) {
     std::lock_guard<std::mutex> lk(_mutex);
     if (_contexts.find(id) != _contexts.end()) {
-        throw std::runtime_error("CHOLMOD Context " + id + " already exists");
+        throw std::runtime_error("KLU Context " + id + " already exists");
     }
-    std::unique_ptr<GaussNewtonCHOLMODContext> context(new GaussNewtonCHOLMODContext());
+    std::unique_ptr<GaussNewtonKLUContext> context(new GaussNewtonKLUContext());
     auto it = _contexts.insert(std::make_pair(id, std::move(context)));
     return *it.first->second;
 }
 
-GaussNewtonCHOLMODContext& GaussNewtonCHOLMODContextManager::findContext(const std::string& id) {
+GaussNewtonKLUContext& GaussNewtonKLUContextManager::findContext(const std::string& id) {
     std::lock_guard<std::mutex> lk(_mutex);
     auto it = _contexts.find(id);
     if (it == _contexts.end()) {
-        throw std::runtime_error("CHOLMOD Context " + id + " not found");
+        throw std::runtime_error("KLU Context " + id + " not found");
     }
     return *it->second;
 }
 
-void GaussNewtonCHOLMODContextManager::removeContext(const std::string& id) {
+void GaussNewtonKLUContextManager::removeContext(const std::string& id) {
     std::lock_guard<std::mutex> lk(_mutex);
     _contexts.erase(id);
 }
 
-std::unique_ptr<GaussNewtonCHOLMODContextManager> CHOLMOD_MANAGER(new GaussNewtonCHOLMODContextManager());
+std::unique_ptr<GaussNewtonKLUContextManager> KLU_GN_MANAGER(new GaussNewtonKLUContextManager());
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    init
  * Signature: (Ljava/lang/String;II[D)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_init(JNIEnv * env, jobject, jstring j_id, jint m, jint /*n*/, jdoubleArray j_w_diag) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_init(JNIEnv* env, jobject, jstring j_id, jint m, jint /*n*/, jdoubleArray j_w_diag) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         powsybl::jni::DoubleArray w_diag(env, j_w_diag);
 
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->createContext(id);
-
-        // Cholesky only needs the upper-triangular half of C (we set stype = 1
-        // on the cholmod_sparse wrapper below). Tell NormalEquations to assemble
-        // only those entries, which roughly halves the contribution map.
-        context.normalEq.setUpperOnly(true);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->createContext(id);
 
         const double* wSqrt = w_diag.get();
         context.wSq.resize(m);
@@ -168,15 +153,15 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_init(JNI
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    release
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_release(JNIEnv* env, jobject, jstring j_id) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_release(JNIEnv* env, jobject, jstring j_id) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
 
-        CHOLMOD_MANAGER->removeContext(id);
+        KLU_GN_MANAGER->removeContext(id);
     } catch (const std::exception& e) {
         powsybl::jni::throwMatrixException(env, e.what());
     } catch (...) {
@@ -184,8 +169,6 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_release(
     }
 }
 
-// Map a Java mode int to the C++ enum. Defined here so the JNI shims have a
-// single place to validate.
 static powsybl::gaussnewton::NormalEquations::DampingMode mapDampingMode(jint mode) {
     using DM = powsybl::gaussnewton::NormalEquations::DampingMode;
     switch (mode) {
@@ -197,59 +180,81 @@ static powsybl::gaussnewton::NormalEquations::DampingMode mapDampingMode(jint mo
     }
 }
 
-// Runs CHOLMOD analyze (lazy, once) + factorize on the current contents of
-// cx_. Sets context.lastRank to n on success, or to symbolic->minor on
-// CHOLMOD_NOT_POSDEF. Other CHOLMOD errors propagate. `static` keeps this
-// internal to this TU (anonymous namespace would not, since we're inside
-// extern "C").
-static int factorCachedC(GaussNewtonCHOLMODContext& context, int n) {
-    cholmod_sparse C{};
-    C.nrow = n;
-    C.ncol = n;
-    C.nzmax = context.normalEq.nnzC();
-    C.p = context.normalEq.cp();
-    C.i = context.normalEq.ci();
-    C.x = context.normalEq.cx();
-    C.z = nullptr;
-    C.stype = 1;
-    C.itype = CHOLMOD_INT;
-    C.xtype = CHOLMOD_REAL;
-    C.dtype = CHOLMOD_DOUBLE;
-    C.sorted = 1;
-    C.packed = 1;
+// Runs KLU analyze (lazy, once) + factor/refactor on the current cx_. Sets
+// context.lastRank to n on success, or to common.singular_col on KLU_SINGULAR.
+static int factorCachedC(GaussNewtonKLUContext& context, int n,
+                         const char** outPath = nullptr) {
+    int* Cp = context.normalEq.cp();
+    int* Ci = context.normalEq.ci();
+    double* Cx = context.normalEq.cx();
 
     if (!context.symbolic) {
-        context.symbolic = cholmod_analyze(&C, &context.common);
+        context.symbolic = klu_analyze(n, Cp, Ci, &context.common);
         if (!context.symbolic) {
-            throw std::runtime_error("cholmod_analyze error: " + context.error());
+            throw std::runtime_error("klu_analyze error " + context.error());
         }
     }
 
-    cholmod_factorize(&C, context.symbolic, &context.common);
+    const char* factorPath = "factor";
+    int rank = n;
+    auto handleSingularOrError = [&](const char* opName) {
+        if (context.common.status == KLU_SINGULAR) {
+            rank = static_cast<int>(context.common.singular_col);
+            if (context.numeric) {
+                klu_free_numeric(&context.numeric, &context.common);
+            }
+        } else {
+            throw std::runtime_error(std::string(opName) + " error " + context.error());
+        }
+    };
 
-    int rank;
-    if (context.common.status == CHOLMOD_NOT_POSDEF) {
-        rank = static_cast<int>(context.symbolic->minor);
-    } else if (context.common.status != CHOLMOD_OK) {
-        throw std::runtime_error("cholmod_factorize error: " + context.error());
+    if (!context.numeric) {
+        context.numeric = klu_factor(Cp, Ci, Cx, context.symbolic, &context.common);
+        if (!context.numeric) {
+            handleSingularOrError("klu_factor");
+        }
     } else {
-        rank = n;
+        int ok = klu_refactor(Cp, Ci, Cx, context.symbolic, context.numeric, &context.common);
+        if (ok == 0) {
+            handleSingularOrError("klu_refactor");
+        } else {
+            ok = klu_rgrowth(Cp, Ci, Cx, context.symbolic, context.numeric, &context.common);
+            if (ok == 0) {
+                throw std::runtime_error("klu_rgrowth error " + context.error());
+            }
+            if (context.common.rgrowth < KLU_RGROWTH_THRESHOLD) {
+                if (klu_free_numeric(&context.numeric, &context.common) == 0) {
+                    throw std::runtime_error("klu_free_numeric error " + context.error());
+                }
+                context.numeric = klu_factor(Cp, Ci, Cx, context.symbolic, &context.common);
+                if (!context.numeric) {
+                    handleSingularOrError("klu_factor");
+                }
+                factorPath = "refactor->factor";
+            } else {
+                factorPath = "refactor";
+            }
+        }
     }
     context.lastRank = rank;
+    if (outPath) {
+        *outPath = factorPath;
+    }
     return rank;
 }
 
-// GN factorize: assemble C, factor as-is (no LM damping).
-static int factorizeInternal(GaussNewtonCHOLMODContext& context, int n, int m,
+// GN factorize: assemble C, factor as-is.
+static int factorizeInternal(GaussNewtonKLUContext& context, int n, int m,
                       const int* ap, const int* ai, const double* ax,
-                      double* outUpdateMs = nullptr, double* outFactorMs = nullptr) {
+                      double* outUpdateMs = nullptr, double* outFactorMs = nullptr,
+                      const char** outPath = nullptr) {
     const bool profile = (outUpdateMs != nullptr);
     auto t0 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
     context.normalEq.updateMatrix(n, m, ap, ai, ax, context.wSq.data());
     auto t1 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
-    int rank = factorCachedC(context, n);
+    int rank = factorCachedC(context, n, outPath);
     auto t2 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
     if (profile) {
@@ -262,13 +267,14 @@ static int factorizeInternal(GaussNewtonCHOLMODContext& context, int n, int m,
     return rank;
 }
 
-// LM factorize: assemble C, apply LM damping, factor.
-static int factorizeLMInternal(GaussNewtonCHOLMODContext& context, int n, int m,
+// LM factorize: assemble C, apply damping, factor.
+static int factorizeLMInternal(GaussNewtonKLUContext& context, int n, int m,
                                const int* ap, const int* ai, const double* ax,
                                double lambda, jint mode,
                                double* outUpdateMs = nullptr,
                                double* outDampMs = nullptr,
-                               double* outFactorMs = nullptr) {
+                               double* outFactorMs = nullptr,
+                               const char** outPath = nullptr) {
     const bool profile = (outUpdateMs != nullptr);
     auto t0 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
@@ -278,7 +284,7 @@ static int factorizeLMInternal(GaussNewtonCHOLMODContext& context, int n, int m,
     context.normalEq.applyDamping(lambda, mapDampingMode(mode));
     auto t2 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
-    int rank = factorCachedC(context, n);
+    int rank = factorCachedC(context, n, outPath);
     auto t3 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
     if (profile) {
@@ -292,13 +298,12 @@ static int factorizeLMInternal(GaussNewtonCHOLMODContext& context, int n, int m,
     return rank;
 }
 
-// LM refactorize: keep cached Ht/C contributions, re-apply damping with a new
-// lambda, factor again. Used in the LM outer loop when a step was rejected
-// and we want to retry with a larger lambda without rebuilding C.
-static int refactorizeLMInternal(GaussNewtonCHOLMODContext& context,
+// LM refactorize: reuse cached Ht/C, apply damping with a new lambda, factor.
+static int refactorizeLMInternal(GaussNewtonKLUContext& context,
                                  double lambda, jint mode,
                                  double* outDampMs = nullptr,
-                                 double* outFactorMs = nullptr) {
+                                 double* outFactorMs = nullptr,
+                                 const char** outPath = nullptr) {
     if (!context.normalEq.patternBuilt()) {
         throw std::runtime_error("refactorizeLM: no pattern cached; call factorize/factorizeLM first");
     }
@@ -310,7 +315,7 @@ static int refactorizeLMInternal(GaussNewtonCHOLMODContext& context,
     context.normalEq.applyDamping(lambda, mapDampingMode(mode));
     auto t1 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
-    int rank = factorCachedC(context, n);
+    int rank = factorCachedC(context, n, outPath);
     auto t2 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
     if (profile) {
@@ -323,7 +328,7 @@ static int refactorizeLMInternal(GaussNewtonCHOLMODContext& context,
     return rank;
 }
 
-static void solveInternal(GaussNewtonCHOLMODContext& context, const double* r, double* result,
+static void solveInternal(GaussNewtonKLUContext& context, const double* r, double* result,
                    double* outRhsMs = nullptr, double* outSolveMs = nullptr) {
     if (context.lastRank < 0) {
         throw std::runtime_error("solveFactorized: no factor cached (call factorize first)");
@@ -340,21 +345,10 @@ static void solveInternal(GaussNewtonCHOLMODContext& context, const double* r, d
     context.normalEq.computeRhs(context.wSq.data(), r);
     auto t1 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
-    cholmod_dense rhs{};
-    rhs.nrow = n;
-    rhs.ncol = 1;
-    rhs.nzmax = n;
-    rhs.d = n;
-    rhs.x = context.normalEq.rhs();
-    rhs.z = nullptr;
-    rhs.xtype = CHOLMOD_REAL;
-    rhs.dtype = CHOLMOD_DOUBLE;
-
-    if (cholmod_solve2(CHOLMOD_A, context.symbolic, &rhs, nullptr,
-                       &context.X, nullptr, &context.Y, &context.E, &context.common) == 0) {
-        throw std::runtime_error("cholmod_solve2 error: " + context.error());
+    std::memcpy(result, context.normalEq.rhs(), n * sizeof(double));
+    if (klu_solve(context.symbolic, context.numeric, n, 1, result, &context.common) == 0) {
+        throw std::runtime_error("klu_solve error " + context.error());
     }
-    std::memcpy(result, context.X->x, n * sizeof(double));
     auto t2 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
     if (profile) {
@@ -371,7 +365,7 @@ static void solveInternal(GaussNewtonCHOLMODContext& context, const double* r, d
  * when the caller already has a fully-formed n-vector b (e.g. a unit vector
  * for state-covariance columns of C^-1). Same rank guards as solveInternal.
  */
-static void solveRawInternal(GaussNewtonCHOLMODContext& context, const double* b, double* result,
+static void solveRawInternal(GaussNewtonKLUContext& context, const double* b, double* result,
                               double* outSolveMs = nullptr) {
     if (context.lastRank < 0) {
         throw std::runtime_error("solveFactorizedRaw: no factor cached (call factorize first)");
@@ -385,21 +379,11 @@ static void solveRawInternal(GaussNewtonCHOLMODContext& context, const double* b
     const bool profile = (outSolveMs != nullptr);
     auto t0 = profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
-    cholmod_dense rhs{};
-    rhs.nrow = n;
-    rhs.ncol = 1;
-    rhs.nzmax = n;
-    rhs.d = n;
-    rhs.x = const_cast<double*>(b);
-    rhs.z = nullptr;
-    rhs.xtype = CHOLMOD_REAL;
-    rhs.dtype = CHOLMOD_DOUBLE;
-
-    if (cholmod_solve2(CHOLMOD_A, context.symbolic, &rhs, nullptr,
-                       &context.X, nullptr, &context.Y, &context.E, &context.common) == 0) {
-        throw std::runtime_error("cholmod_solve2 error: " + context.error());
+    // klu_solve overwrites its rhs buffer with the solution.
+    std::memcpy(result, b, n * sizeof(double));
+    if (klu_solve(context.symbolic, context.numeric, n, 1, result, &context.common) == 0) {
+        throw std::runtime_error("klu_solve error " + context.error());
     }
-    std::memcpy(result, context.X->x, n * sizeof(double));
 
     if (profile) {
         auto t1 = std::chrono::steady_clock::now();
@@ -408,12 +392,12 @@ static void solveRawInternal(GaussNewtonCHOLMODContext& context, const double* b
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    factorize
  * Signature: (Ljava/lang/String;IILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;)I
  */
-JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_factorize(JNIEnv* env, jobject, jstring j_id,
-                                                                                   jint m, jint n, jobject j_ap, jobject j_ai, jobject j_ax) {
+JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_factorize(JNIEnv* env, jobject, jstring j_id,
+                                                                              jint m, jint n, jobject j_ap, jobject j_ai, jobject j_ax) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* ap = static_cast<int*>(env->GetDirectBufferAddress(j_ap));
@@ -423,14 +407,15 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_factoriz
             throw std::runtime_error("factorize() requires direct buffers (ByteBuffer.allocateDirect)");
         }
 
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         if (profileEnabled()) {
             double tUpdate = 0.0;
             double tFactor = 0.0;
-            int rank = factorizeInternal(context, n, m, ap, ai, ax, &tUpdate, &tFactor);
-            std::fprintf(stderr, "[gn-cholmod factorize] update=%.3f factorize=%.3f ms rank=%d\n",
-                         tUpdate, tFactor, rank);
+            const char* path = "factor";
+            int rank = factorizeInternal(context, n, m, ap, ai, ax, &tUpdate, &tFactor, &path);
+            std::fprintf(stderr, "[gn-klu factorize] update=%.3f factorize[%s,rgrowth=%.2e]=%.3f ms rank=%d\n",
+                         tUpdate, path, context.common.rgrowth, tFactor, rank);
             return rank;
         }
         return factorizeInternal(context, n, m, ap, ai, ax);
@@ -443,12 +428,12 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_factoriz
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    solveFactorized
  * Signature: (Ljava/lang/String;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveFactorized(JNIEnv* env, jobject, jstring j_id,
-                                                                                         jobject j_r, jobject j_result) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_solveFactorized(JNIEnv* env, jobject, jstring j_id,
+                                                                                    jobject j_r, jobject j_result) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* r = static_cast<double*>(env->GetDirectBufferAddress(j_r));
@@ -457,13 +442,13 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveFac
             throw std::runtime_error("solveFactorized() requires direct buffers (ByteBuffer.allocateDirect)");
         }
 
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         if (profileEnabled()) {
             double tRhs = 0.0;
             double tSolve = 0.0;
             solveInternal(context, r, result, &tRhs, &tSolve);
-            std::fprintf(stderr, "[gn-cholmod solveFactorized] rhs=%.3f solve=%.3f ms\n", tRhs, tSolve);
+            std::fprintf(stderr, "[gn-klu solveFactorized] rhs=%.3f solve=%.3f ms\n", tRhs, tSolve);
         } else {
             solveInternal(context, r, result);
         }
@@ -475,12 +460,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveFac
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    solveFactorizedRaw
  * Signature: (Ljava/lang/String;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveFactorizedRaw(JNIEnv* env, jobject, jstring j_id,
-                                                                                            jobject j_b, jobject j_result) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_solveFactorizedRaw(JNIEnv* env, jobject, jstring j_id,
+                                                                                       jobject j_b, jobject j_result) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* b = static_cast<double*>(env->GetDirectBufferAddress(j_b));
@@ -489,12 +474,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveFac
             throw std::runtime_error("solveFactorizedRaw() requires direct buffers (ByteBuffer.allocateDirect)");
         }
 
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         if (profileEnabled()) {
             double tSolve = 0.0;
             solveRawInternal(context, b, result, &tSolve);
-            std::fprintf(stderr, "[gn-cholmod solveFactorizedRaw] solve=%.3f ms\n", tSolve);
+            std::fprintf(stderr, "[gn-klu solveFactorizedRaw] solve=%.3f ms\n", tSolve);
         } else {
             solveRawInternal(context, b, result);
         }
@@ -506,12 +491,12 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveFac
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    solve
  * Signature: (Ljava/lang/String;Ljava/nio/DoubleBuffer;IILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solve(JNIEnv* env, jobject, jstring j_id, jobject j_r,
-                                                                              jint m, jint n, jobject j_ap, jobject j_ai, jobject j_ax, jobject j_result) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_solve(JNIEnv* env, jobject, jstring j_id, jobject j_r,
+                                                                        jint m, jint n, jobject j_ap, jobject j_ai, jobject j_ax, jobject j_result) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* r = static_cast<double*>(env->GetDirectBufferAddress(j_r));
@@ -523,15 +508,16 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solve(JN
             throw std::runtime_error("solve() requires direct buffers (ByteBuffer.allocateDirect)");
         }
 
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         const bool profile = profileEnabled();
         double tUpdate = 0.0;
         double tFactor = 0.0;
         double tRhs = 0.0;
         double tSolve = 0.0;
+        const char* path = "factor";
         int rank = profile
-                ? factorizeInternal(context, n, m, ap, ai, ax, &tUpdate, &tFactor)
+                ? factorizeInternal(context, n, m, ap, ai, ax, &tUpdate, &tFactor, &path)
                 : factorizeInternal(context, n, m, ap, ai, ax);
         if (rank != n) {
             throw std::runtime_error("solve: rank-deficient (rank=" + std::to_string(rank)
@@ -539,8 +525,8 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solve(JN
         }
         if (profile) {
             solveInternal(context, r, result, &tRhs, &tSolve);
-            std::fprintf(stderr, "[gn-cholmod] update=%.3f factorize=%.3f rhs=%.3f solve=%.3f ms\n",
-                         tUpdate, tFactor, tRhs, tSolve);
+            std::fprintf(stderr, "[gn-klu] update=%.3f factorize[%s,rgrowth=%.2e]=%.3f rhs=%.3f solve=%.3f ms\n",
+                         tUpdate, path, context.common.rgrowth, tFactor, tRhs, tSolve);
         } else {
             solveInternal(context, r, result);
         }
@@ -552,14 +538,14 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solve(JN
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    factorizeLM
  * Signature: (Ljava/lang/String;IILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;DI)I
  */
-JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_factorizeLM(JNIEnv* env, jobject, jstring j_id,
-                                                                                    jint m, jint n,
-                                                                                    jobject j_ap, jobject j_ai, jobject j_ax,
-                                                                                    jdouble lambda, jint mode) {
+JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_factorizeLM(JNIEnv* env, jobject, jstring j_id,
+                                                                                jint m, jint n,
+                                                                                jobject j_ap, jobject j_ai, jobject j_ax,
+                                                                                jdouble lambda, jint mode) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* ap = static_cast<int*>(env->GetDirectBufferAddress(j_ap));
@@ -568,16 +554,17 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_factoriz
         if (!ap || !ai || !ax) {
             throw std::runtime_error("factorizeLM() requires direct buffers");
         }
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         if (profileEnabled()) {
             double tUpdate = 0.0;
             double tDamp = 0.0;
             double tFactor = 0.0;
+            const char* path = "factor";
             int rank = factorizeLMInternal(context, n, m, ap, ai, ax, lambda, mode,
-                                           &tUpdate, &tDamp, &tFactor);
-            std::fprintf(stderr, "[gn-cholmod factorizeLM lambda=%.3e mode=%d] update=%.3f damp=%.3f factorize=%.3f ms rank=%d\n",
-                         lambda, mode, tUpdate, tDamp, tFactor, rank);
+                                           &tUpdate, &tDamp, &tFactor, &path);
+            std::fprintf(stderr, "[gn-klu factorizeLM lambda=%.3e mode=%d] update=%.3f damp=%.3f factorize[%s,rgrowth=%.2e]=%.3f ms rank=%d\n",
+                         lambda, mode, tUpdate, tDamp, path, context.common.rgrowth, tFactor, rank);
             return rank;
         }
         return factorizeLMInternal(context, n, m, ap, ai, ax, lambda, mode);
@@ -590,22 +577,23 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_factoriz
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    refactorizeLM
  * Signature: (Ljava/lang/String;DI)I
  */
-JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_refactorizeLM(JNIEnv* env, jobject, jstring j_id,
-                                                                                      jdouble lambda, jint mode) {
+JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_refactorizeLM(JNIEnv* env, jobject, jstring j_id,
+                                                                                  jdouble lambda, jint mode) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         if (profileEnabled()) {
             double tDamp = 0.0;
             double tFactor = 0.0;
-            int rank = refactorizeLMInternal(context, lambda, mode, &tDamp, &tFactor);
-            std::fprintf(stderr, "[gn-cholmod refactorizeLM lambda=%.3e mode=%d] damp=%.3f factorize=%.3f ms rank=%d\n",
-                         lambda, mode, tDamp, tFactor, rank);
+            const char* path = "factor";
+            int rank = refactorizeLMInternal(context, lambda, mode, &tDamp, &tFactor, &path);
+            std::fprintf(stderr, "[gn-klu refactorizeLM lambda=%.3e mode=%d] damp=%.3f factorize[%s,rgrowth=%.2e]=%.3f ms rank=%d\n",
+                         lambda, mode, tDamp, path, context.common.rgrowth, tFactor, rank);
             return rank;
         }
         return refactorizeLMInternal(context, lambda, mode);
@@ -618,14 +606,14 @@ JNIEXPORT jint JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_refactor
 }
 
 /*
- * Class:     com_powsybl_math_solver_GaussNewtonCholesky
+ * Class:     com_powsybl_math_solver_GaussNewtonKLU
  * Method:    solveLM
  * Signature: (Ljava/lang/String;Ljava/nio/DoubleBuffer;IILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;DILjava/nio/DoubleBuffer;)V
  */
-JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveLM(JNIEnv* env, jobject, jstring j_id, jobject j_r,
-                                                                                 jint m, jint n,
-                                                                                 jobject j_ap, jobject j_ai, jobject j_ax,
-                                                                                 jdouble lambda, jint mode, jobject j_result) {
+JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonKLU_solveLM(JNIEnv* env, jobject, jstring j_id, jobject j_r,
+                                                                            jint m, jint n,
+                                                                            jobject j_ap, jobject j_ai, jobject j_ax,
+                                                                            jdouble lambda, jint mode, jobject j_result) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
         auto* r = static_cast<double*>(env->GetDirectBufferAddress(j_r));
@@ -636,7 +624,7 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveLM(
         if (!r || !ap || !ai || !ax || !result) {
             throw std::runtime_error("solveLM() requires direct buffers");
         }
-        GaussNewtonCHOLMODContext& context = CHOLMOD_MANAGER->findContext(id);
+        GaussNewtonKLUContext& context = KLU_GN_MANAGER->findContext(id);
 
         const bool profile = profileEnabled();
         double tUpdate = 0.0;
@@ -644,9 +632,10 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveLM(
         double tFactor = 0.0;
         double tRhs = 0.0;
         double tSolve = 0.0;
+        const char* path = "factor";
         int rank = profile
                 ? factorizeLMInternal(context, n, m, ap, ai, ax, lambda, mode,
-                                      &tUpdate, &tDamp, &tFactor)
+                                      &tUpdate, &tDamp, &tFactor, &path)
                 : factorizeLMInternal(context, n, m, ap, ai, ax, lambda, mode);
         if (rank != n) {
             throw std::runtime_error("solveLM: damped factor still rank-deficient (rank="
@@ -655,8 +644,8 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_solver_GaussNewtonCholesky_solveLM(
         }
         if (profile) {
             solveInternal(context, r, result, &tRhs, &tSolve);
-            std::fprintf(stderr, "[gn-cholmod solveLM lambda=%.3e mode=%d] update=%.3f damp=%.3f factorize=%.3f rhs=%.3f solve=%.3f ms\n",
-                         lambda, mode, tUpdate, tDamp, tFactor, tRhs, tSolve);
+            std::fprintf(stderr, "[gn-klu solveLM lambda=%.3e mode=%d] update=%.3f damp=%.3f factorize[%s,rgrowth=%.2e]=%.3f rhs=%.3f solve=%.3f ms\n",
+                         lambda, mode, tUpdate, tDamp, path, context.common.rgrowth, tFactor, tRhs, tSolve);
         } else {
             solveInternal(context, r, result);
         }
