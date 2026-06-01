@@ -1,5 +1,12 @@
 # powsybl-math-native
-This project is the C++ implementation of [powsybl-math](https://github.com/powsybl/powsybl-core) `SparseMatrix` class, relying on SuiteSparse project.
+This project provides the native (C++/JNI) backend for [powsybl-math](https://github.com/powsybl/powsybl-core), relying on the [SuiteSparse](https://github.com/DrTimothyAldenDavis/SuiteSparse) and [SUNDIALS](https://github.com/LLNL/sundials) projects.
+
+It exposes:
+- the `SparseMatrix` LU decomposition (KLU / CXSparse);
+- the `Kinsol` non-linear solver (SUNDIALS KINSOL);
+- a `GaussNewtonCholesky` weighted least-squares solver for the Gauss-Newton / Levenberg-Marquardt normal equations `(HᵀWH)Δx = HᵀWr`, backed by CHOLMOD.
+
+CHOLMOD is built with its simplicial (BLAS-free) factorization so the library stays portable across Linux, macOS and Windows without a BLAS/LAPACK dependency.
 
 ## Requirements
 To build `powsybl-math-native`, you need the following dependencies:
