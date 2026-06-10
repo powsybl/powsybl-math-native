@@ -35,6 +35,14 @@ jobs:
             artifact_path: osx_arm64
           }
           - {
+            name: linux_aarch64,
+            os: ubuntu-22.04-arm,
+            container: 'quay.io/pypa/manylinux2014_aarch64',
+            artifact_name: libmath.so,
+            upload_name: libmath_aarch64.so,
+            artifact_path: linux_arm64
+          }
+          - {
             name: windows,
             os: windows-2019,
             artifact_name: math.dll,
@@ -45,7 +53,7 @@ jobs:
     steps:
       # by default ubuntu 18.04 is shipped with cmake 3.10, to get a more recent version we get it from kitware repo
       - name: Install pre-requisites
-        if: matrix.config.name == 'linux'
+        if: matrix.config.name == 'linux' || matrix.config.name == 'linux_aarch64'
         run: |
           yum install -y wget
           wget https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz -P /tmp
@@ -105,6 +113,12 @@ jobs:
         with:
           name: libmath_arm64.dylib
           path: target/classes/natives/osx_arm64/
+
+      - name: Download Linux ARM64 library
+        uses: actions/download-artifact@v3
+        with:
+          name: libmath_aarch64.so
+          path: target/classes/natives/linux_arm64/
 
       - name: Download Windows library
         uses: actions/download-artifact@v3
