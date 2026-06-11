@@ -74,7 +74,7 @@ jobs:
         run: mvn --batch-mode package
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.config.upload_name }}
           path: ${{ runner.workspace }}/powsybl-math-native/target/classes/natives/${{ matrix.config.artifact_path }}/${{ matrix.config.artifact_name }}
