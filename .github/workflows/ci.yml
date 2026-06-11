@@ -50,11 +50,11 @@ jobs:
           yum install -y epel-release
           yum install -y git maven
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Checkout sources
         uses: actions/checkout@v4
