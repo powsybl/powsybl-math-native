@@ -48,7 +48,7 @@ jobs:
         if: matrix.config.name == 'linux'
         run: |
           yum install -y wget
-          wget https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.16-bin.tar.gz -P /tmp
+          wget https://dlcdn.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz -P /tmp
           tar xf /tmp/apache-maven-*.tar.gz -C /opt
           echo /opt/apache-maven-3.9.16/bin >> $GITHUB_PATH
 
