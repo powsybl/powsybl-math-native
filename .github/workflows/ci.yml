@@ -46,7 +46,7 @@ jobs:
           - {
             name: linux_aarch64,
             os: ubuntu-22.04-arm,
-            container: 'quay.io/pypa/manylinux2014_aarch64',
+            container: 'quay.io/pypa/manylinux_2_28_aarch64',
             artifact_name: libmath.so,
             upload_name: libmath_aarch64.so,
             artifact_path: linux_arm64
