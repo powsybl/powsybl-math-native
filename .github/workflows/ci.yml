@@ -93,10 +93,12 @@ jobs:
         run: cmake --build $GITHUB_WORKSPACE/build --parallel --config Release
 
       - name: Test (not Windows)
+        if: matrix.config.name != 'windows'
         shell: bash
         run: ./mvnw --batch-mode package
 
       - name: Test (Windows)
+        if: matrix.config.name == 'windows'
         shell: bash
         run: mvnw.cmd --batch-mode package
 
