@@ -99,7 +99,7 @@ jobs:
 
       - name: Test (Windows)
         if: matrix.config.name == 'windows'
-        shell: bash
+        shell: cmd
         run: mvnw.cmd --batch-mode package
 
       - name: Upload artifact
