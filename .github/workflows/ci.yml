@@ -149,7 +149,7 @@ jobs:
 
       - name: Build Jar
         shell: bash
-        run: mvn -DskipTests install
+        run: ./mvnw -DskipTests install
 
       - name: Upload wheels
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
