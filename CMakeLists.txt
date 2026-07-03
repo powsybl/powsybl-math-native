@@ -94,3 +94,72 @@ target_link_libraries(math
     sundials_kinsol_static
     sundials_sunlinsolklu_static
 )
+
+# Optional cuDSS-backed LU decomposition, built as a SEPARATE shared library so
+# the CUDA dependency never touches the CPU-only libmath. Off by default, so the
+# standard (no-CUDA) build and CI are unaffected.
+#
+#   cmake .. -DWITH_CUDSS=ON -DCUDSS_ROOT=/path/to/cudss -DCUDAToolkit_ROOT=/path/to/cuda
+#
+# Packaging: WITH_CUDSS controls whether libmathcudss is BUILT (and thus bundled
+# by the normal `mvn package`, into target/classes/natives/<arch>/, like libmath).
+#
+# libmathcudss is OUR small JNI wrapper (MPL) and is DYNAMICALLY linked to NVIDIA
+# cuDSS, so a jar that contains it never contains libcudss.so itself (only a
+# runtime NEEDED reference). It is therefore freely distributable; what is NOT
+# redistributable is NVIDIA's libcudss.so, which we never bundle (and a default
+# build has zero cuDSS files under target/classes). So bundling our wrapper in the
+# released jar is fine.
+#
+# The flag is opt-in only because (1) building requires the CUDA toolkit + cuDSS at
+# BUILD time, which the standard CI build jobs do not have, and (2) it is an
+# optional GPU feature. At RUNTIME the user must provide libcudss/libcudart/libcublas
+# on the loader path (LD_LIBRARY_PATH) and a GPU; otherwise
+# CuDssMatrixFactory.isAvailable() is false and callers fall back to KLU.
+option(WITH_CUDSS "Build the cuDSS LU decomposition native library (libmathcudss)" OFF)
+if(WITH_CUDSS)
+    find_package(CUDAToolkit REQUIRED)
+    set(CUDSS_ROOT "" CACHE PATH "Path to the cuDSS install (contains include/ and lib/)")
+    find_path(CUDSS_INCLUDE_DIR cudss.h HINTS ${CUDSS_ROOT}/include REQUIRED)
+    find_library(CUDSS_LIBRARY cudss HINTS ${CUDSS_ROOT}/lib REQUIRED)
+    message(STATUS "cuDSS header: ${CUDSS_INCLUDE_DIR}")
+    message(STATUS "cuDSS library: ${CUDSS_LIBRARY}")
+
+    # cudss.cpp only calls the cuDSS/CUDA runtime API (no __global__ kernels), so
+    # it compiles with the ordinary C++ compiler; no CUDA language / arch needed.
+    add_library(mathcudss SHARED
+        src/main/cpp/jniwrapper.cpp
+        src/main/cpp/cudss.cpp
+    )
+    target_include_directories(mathcudss
+        PRIVATE
+        ${JNI_INCLUDE_DIRS}
+        ${CUDSS_INCLUDE_DIR}
+        ${CUDAToolkit_INCLUDE_DIRS}
+    )
+    target_link_libraries(mathcudss
+        PRIVATE
+        ${CUDSS_LIBRARY}
+        CUDA::cudart
+        CUDA::cublas
+    )
+
+    # Optional: bake an absolute RPATH to the cuDSS + CUDA runtime libraries into
+    # libmathcudss so it loads WITHOUT LD_LIBRARY_PATH (handy for a local GPU build
+    # used by open-loadflow: the jar then "just works", no env var to set). We use
+    # DT_RPATH (--disable-new-dtags), not the default DT_RUNPATH, so it also
+    # resolves cuDSS's own transitive deps (e.g. libcublas). The path is absolute
+    # and machine-local, so this is for LOCAL use, not a portable/redistributed jar.
+    option(CUDSS_EMBED_RPATH "Embed an absolute RPATH to cuDSS/CUDA so libmathcudss runs without LD_LIBRARY_PATH (local builds only)" OFF)
+    if(CUDSS_EMBED_RPATH)
+        get_filename_component(CUDSS_LIBRARY_DIR "${CUDSS_LIBRARY}" DIRECTORY)
+        set_target_properties(mathcudss PROPERTIES SKIP_BUILD_RPATH TRUE)
+        target_link_options(mathcudss PRIVATE
+            "-Wl,--disable-new-dtags"
+            "-Wl,-rpath,${CUDSS_LIBRARY_DIR}:${CUDAToolkit_LIBRARY_DIR}")
+    endif()
+
+    set_target_properties(mathcudss PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${MATH_OUTPUT_DIRECTORY})
+    set_target_properties(mathcudss PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${MATH_OUTPUT_DIRECTORY})
+    set_target_properties(mathcudss PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${MATH_OUTPUT_DIRECTORY})
+endif()
