@@ -3,6 +3,7 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
  *
  * @file jniwrapper.cpp
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
@@ -83,9 +84,10 @@ private:
 
 class IntArray : public JniWrapper<jintArray> {
 public:
-    IntArray(JNIEnv* env, jintArray obj) :
+    IntArray(JNIEnv* env, jintArray obj, bool readOnly = false) :
         JniWrapper<jintArray>(env, obj),
-        _ptr(nullptr) {
+        _ptr(nullptr),
+        _readOnly(readOnly) {
     }
 
     IntArray(JNIEnv* env, int length)
@@ -94,7 +96,8 @@ public:
 
     IntArray(JNIEnv* env, int* ptr, int length) :
         JniWrapper<jintArray>(env, env->NewIntArray(length)),
-        _ptr(nullptr) {
+        _ptr(nullptr),
+        _readOnly(false) {
         if (ptr) {
             _env->SetIntArrayRegion(_obj, 0, length, (const jint*) ptr);
         }
@@ -102,7 +105,8 @@ public:
 
     ~IntArray() override {
         if (_ptr) {
-            _env->ReleaseIntArrayElements(_obj, _ptr, 0);
+            // JNI_ABORT skips the copy-back; safe iff the caller did not modify the data.
+            _env->ReleaseIntArrayElements(_obj, _ptr, _readOnly ? JNI_ABORT : 0);
         }
     }
 
@@ -119,13 +123,15 @@ public:
 
 private:
     mutable jint* _ptr;
+    bool _readOnly;
 };
 
 class DoubleArray : public JniWrapper<jdoubleArray> {
 public:
-    DoubleArray(JNIEnv* env, jdoubleArray obj) :
+    DoubleArray(JNIEnv* env, jdoubleArray obj, bool readOnly = false) :
         JniWrapper<jdoubleArray>(env, obj),
-        _ptr(nullptr) {
+        _ptr(nullptr),
+        _readOnly(readOnly) {
     }
 
     DoubleArray(JNIEnv* env, int length) :
@@ -134,7 +140,8 @@ public:
 
     DoubleArray(JNIEnv* env, double* ptr, int length) :
         JniWrapper<jdoubleArray>(env, env->NewDoubleArray(length)),
-        _ptr(nullptr) {
+        _ptr(nullptr),
+        _readOnly(false) {
         if (ptr) {
             _env->SetDoubleArrayRegion(_obj, 0, length, ptr);
         }
@@ -142,7 +149,8 @@ public:
 
     ~DoubleArray() override {
         if (_ptr) {
-            _env->ReleaseDoubleArrayElements(_obj, _ptr, 0);
+            // JNI_ABORT skips the copy-back; safe iff the caller did not modify the data.
+            _env->ReleaseDoubleArrayElements(_obj, _ptr, _readOnly ? JNI_ABORT : 0);
         }
     }
 
@@ -159,6 +167,7 @@ public:
 
 private:
     mutable jdouble* _ptr;
+    bool _readOnly;
 };
 
 void throwMathException(JNIEnv* env, const char* msg);

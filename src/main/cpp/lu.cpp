@@ -3,6 +3,7 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
  *
  * @file lu.cpp
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
@@ -16,6 +17,7 @@
 #include <klu.h>
 #include <cs.h>
 #include "jniwrapper.hpp"
+#include "context_manager.hpp"
 #include "lu.hpp"
 
 namespace powsybl {
@@ -68,50 +70,7 @@ std::string LUContext::error() const {
     }
 }
 
-class LUContextManager {
-public:
-    LUContextManager() = default;
-
-    LUContextManager(const LUContextManager&) = delete;
-
-    ~LUContextManager() = default;
-
-    LUContextManager& operator=(const LUContextManager&) = delete;
-
-    LUContext& createContext(const std::string& id);
-
-    LUContext& findContext(const std::string& id);
-
-    void removeContext(const std::string& id);
-
-private:
-    std::map<std::string, std::unique_ptr<LUContext>> _contexts;
-    std::mutex _mutex;
-};
-
-LUContext& LUContextManager::createContext(const std::string& id) {
-    std::lock_guard<std::mutex> lk(_mutex);
-    if (_contexts.find(id) != _contexts.end()) {
-        throw std::runtime_error("Context " + id + " already exists");
-    }
-    std::unique_ptr<LUContext> context(new LUContext());
-    auto it = _contexts.insert(std::make_pair(id, std::move(context)));
-    return *it.first->second;
-}
-
-LUContext& LUContextManager::findContext(const std::string& id) {
-    std::lock_guard<std::mutex> lk(_mutex);
-    auto it = _contexts.find(id);
-    if (it == _contexts.end()) {
-        throw std::runtime_error("Context " + id + " not found");
-    }
-    return *it->second;
-}
-
-void LUContextManager::removeContext(const std::string& id) {
-    std::lock_guard<std::mutex> lk(_mutex);
-    _contexts.erase(id);
-}
+using LUContextManager = powsybl::ContextManager<LUContext>;
 
 std::unique_ptr<LUContextManager> MANAGER(new LUContextManager());
 
@@ -127,9 +86,11 @@ extern "C" {
 JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_init(JNIEnv * env, jobject, jstring j_id, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
-        powsybl::jni::IntArray ap(env, j_ap);
-        powsybl::jni::IntArray ai(env, j_ai);
-        powsybl::jni::DoubleArray ax(env, j_ax);
+        // Read-only: klu_analyze/klu_factor document Ap/Ai/Ax as "inputs, not
+        // modified", so skip the copy-back on release.
+        powsybl::jni::IntArray ap(env, j_ap, true);
+        powsybl::jni::IntArray ai(env, j_ai, true);
+        powsybl::jni::DoubleArray ax(env, j_ax, true);
 
         LUContext& context = MANAGER->createContext(id);
  
@@ -161,9 +122,11 @@ JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_upd
                                                                                     jdouble rgrowthThreshold) {
     try {
         std::string id = powsybl::jni::StringUTF(env, j_id).toStr();
-        powsybl::jni::IntArray ap(env, j_ap);
-        powsybl::jni::IntArray ai(env, j_ai);
-        powsybl::jni::DoubleArray ax(env, j_ax);
+        // Read-only: klu_refactor/klu_factor document Ap/Ai/Ax as "inputs, not
+        // modified", and klu_rgrowth only reads Ax.
+        powsybl::jni::IntArray ap(env, j_ap, true);
+        powsybl::jni::IntArray ai(env, j_ai, true);
+        powsybl::jni::DoubleArray ax(env, j_ax, true);
 
         LUContext& context = MANAGER->findContext(id);
         if (rgrowthThreshold > 0) {
@@ -288,12 +251,13 @@ JNIEXPORT void JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_solve2
 JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv * env, jobject, jint m1, jint n1, jintArray j_ap1, jintArray j_ai1, jdoubleArray j_ax1, 
                                                                           jint m2, jint n2, jintArray j_ap2, jintArray j_ai2, jdoubleArray j_ax2) {
     try {
-        powsybl::jni::IntArray ap1(env, j_ap1);
-        powsybl::jni::IntArray ai1(env, j_ai1);
-        powsybl::jni::DoubleArray ax1(env, j_ax1);
-        powsybl::jni::IntArray ap2(env, j_ap2);
-        powsybl::jni::IntArray ai2(env, j_ai2);
-        powsybl::jni::DoubleArray ax2(env, j_ax2);
+        // Read-only: CXSparse never writes into its input matrices.
+        powsybl::jni::IntArray ap1(env, j_ap1, true);
+        powsybl::jni::IntArray ai1(env, j_ai1, true);
+        powsybl::jni::DoubleArray ax1(env, j_ax1, true);
+        powsybl::jni::IntArray ap2(env, j_ap2, true);
+        powsybl::jni::IntArray ai2(env, j_ai2, true);
+        powsybl::jni::DoubleArray ax2(env, j_ax2, true);
 
         cs_di a1;
         a1.nz = -1;
@@ -344,9 +308,10 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_times(JNIEnv
  */
 JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_transpose(JNIEnv * env, jobject, jint m, jint n, jintArray j_ap, jintArray j_ai, jdoubleArray j_ax) {
     try {
-        powsybl::jni::IntArray ap(env, j_ap);
-        powsybl::jni::IntArray ai(env, j_ai);
-        powsybl::jni::DoubleArray ax(env, j_ax);
+        // Read-only: cs_di_transpose never writes into its input.
+        powsybl::jni::IntArray ap(env, j_ap, true);
+        powsybl::jni::IntArray ai(env, j_ai, true);
+        powsybl::jni::DoubleArray ax(env, j_ax, true);
 
         cs_di a;
         a.nz = -1;
@@ -385,12 +350,13 @@ JNIEXPORT jobject JNICALL Java_com_powsybl_math_matrix_SparseMatrix_add(JNIEnv *
                                                                         jint m2, jint n2, jintArray j_ap2, jintArray j_ai2, jdoubleArray j_ax2,
                                                                         jdouble alpha, jdouble beta) {
     try {
-        powsybl::jni::IntArray ap1(env, j_ap1);
-        powsybl::jni::IntArray ai1(env, j_ai1);
-        powsybl::jni::DoubleArray ax1(env, j_ax1);
-        powsybl::jni::IntArray ap2(env, j_ap2);
-        powsybl::jni::IntArray ai2(env, j_ai2);
-        powsybl::jni::DoubleArray ax2(env, j_ax2);
+        // Read-only: CXSparse never writes into its input matrices.
+        powsybl::jni::IntArray ap1(env, j_ap1, true);
+        powsybl::jni::IntArray ai1(env, j_ai1, true);
+        powsybl::jni::DoubleArray ax1(env, j_ax1, true);
+        powsybl::jni::IntArray ap2(env, j_ap2, true);
+        powsybl::jni::IntArray ai2(env, j_ai2, true);
+        powsybl::jni::DoubleArray ax2(env, j_ax2, true);
 
         cs_di a1;
         a1.nz = -1;
