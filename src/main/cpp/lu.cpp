@@ -166,18 +166,18 @@ JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_upd
         powsybl::jni::DoubleArray ax(env, j_ax);
 
         LUContext& context = MANAGER->findContext(id);
+        int ok = 0;
         if (rgrowthThreshold > 0) {
-            int ok = klu_refactor(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
-            if (ok == 0) {
-                throw std::runtime_error("klu_refactor error " + context.error());
-            }
-            ok = klu_rgrowth(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
-            if (ok == 0) {
-                throw std::runtime_error("klu_rgrowth error " + context.error());
+            ok = klu_refactor(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
+            if (ok != 0) {
+                ok = klu_rgrowth(ap.get(), ai.get(), ax.get(), context.symbolic, context.numeric, &context.common);
+                if (ok == 0) {
+                    throw std::runtime_error("klu_rgrowth error " + context.error());
+                }
             }
         }
-        // if rgrowth is too small we have to do a whole factorization
-        if (rgrowthThreshold <= 0 || context.common.rgrowth < rgrowthThreshold) {
+        // if klu_refactor failed or if rgrowth is too small we have to do a whole factorization
+        if (ok == 0 || rgrowthThreshold <= 0 || context.common.rgrowth < rgrowthThreshold) {
             if (klu_free_numeric(&context.numeric, &context.common) == 0) {
                 throw std::runtime_error("klu_free_numeric error " + context.error());
             }
@@ -185,6 +185,9 @@ JNIEXPORT jdouble JNICALL Java_com_powsybl_math_matrix_SparseLUDecomposition_upd
             if (!context.numeric) {
                 throw std::runtime_error("klu_factor error " + context.error());
             }
+        }
+        if (ok == 0) {
+            return 0.0; // returning rgrowth = 0 if klu_refactor failed
         }
         return context.common.rgrowth;
     } catch (const std::exception& e) {
